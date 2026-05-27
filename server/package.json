@@ -1,0 +1,20 @@
+﻿{
+  "name": "unideadline-tracker-server",
+  "version": "1.0.0",
+  "description": "Backend API for UniDeadline Tracker",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest"
+  },
+  "devDependencies": {
+    "nodemon": "latest"
+  }
+}
