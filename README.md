@@ -1,4 +1,3 @@
-@"
 # UniDeadline Tracker
 
 UniDeadline Tracker is a responsive web app for students to manage courses, deadlines, submission status, weekly dashboard, reminders, and basic search/filter.
