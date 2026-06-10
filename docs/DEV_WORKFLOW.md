@@ -12,6 +12,7 @@ It explains how to:
 - Implement within MVP scope
 - Verify locally
 - Report completion
+- Avoid AI Agent scope drift
 
 ---
 
@@ -24,6 +25,7 @@ It explains how to:
 | Main users | University students |
 | Main goal | Manage courses, deadlines, status, weekly dashboard, reminders, and submission links |
 | Demo strategy | Local demo required; online deploy optional |
+| Stable branch | `main` |
 
 MVP modules:
 
@@ -46,22 +48,26 @@ Submission Link Storage
 
 | File | Purpose |
 |---|---|
+| `AGENTS.md` | Root rules for AI Agents |
+| `docs/agent-context/00-index.md` | Agent reading guide |
 | `docs/README_SETUP.md` | Local setup, Supabase setup, env, run commands, troubleshooting |
 | `docs/API_CONTRACT.md` | API source of truth |
 | `docs/DATABASE_SCHEMA.md` | Database schema and RLS source of truth |
 | `docs/CODING_GUIDELINES.md` | Code, branch, commit, PR, security rules |
-| `docs/DEV_WORKFLOW.md` | This workflow guide |
+| `docs/implementation/02_task_template.md` | Copy/paste task template for devs and Agents |
+| `docs/implementation/handoff/issues_backlog.md` | Out-of-scope issues found during work |
 
 Reading order:
 
 | Task type | Required reading |
 |---|---|
-| Any task | Assignment row + `DEV_WORKFLOW.md` |
+| Any task | Assignment row, `AGENTS.md`, `docs/agent-context/00-index.md`, this file |
 | Setup/local run | `README_SETUP.md`, `CODING_GUIDELINES.md` |
-| Frontend | `API_CONTRACT.md`, `CODING_GUIDELINES.md` |
-| Backend/API | `API_CONTRACT.md`, `DATABASE_SCHEMA.md`, `CODING_GUIDELINES.md` |
-| Database/Supabase | `DATABASE_SCHEMA.md`, `README_SETUP.md` |
+| Frontend | `agent-context/06-ui-design.md`, `API_CONTRACT.md`, `CODING_GUIDELINES.md` |
+| Backend/API | `agent-context/05-data-api-contract.md`, `API_CONTRACT.md`, `DATABASE_SCHEMA.md` |
+| Database/Supabase | `agent-context/07-security-supabase.md`, `DATABASE_SCHEMA.md`, `README_SETUP.md` |
 | Demo/QA | `README_SETUP.md`, `API_CONTRACT.md`, assignment sheet |
+| AI Agent task | `AGENTS.md`, `agent-context/08-agent-task-playbook.md`, `implementation/02_task_template.md` |
 
 ---
 
@@ -72,23 +78,26 @@ Each task should come from the assignment sheet.
 Minimum fields:
 
 ```text
-Nhóm tính năng:
-Tính năng:
-Người làm:
-Trạng thái:
-Mô tả / Output:
-Ưu tiên:
+Feature group:
+Feature/task:
+Owner:
+Status:
+Output expected:
+Priority:
 Deadline:
-Ghi chú:
+Notes:
+Allowed files/area:
+Acceptance criteria:
+Verification required:
 ```
 
 Status values:
 
 ```text
-Chưa làm
-Đang làm
+Not started
+In progress
 Review
-Hoàn thành
+Done
 Blocked
 ```
 
@@ -99,6 +108,8 @@ Must
 Should
 Could
 ```
+
+If the assignment sheet uses Vietnamese labels, map them to the same meaning.
 
 ---
 
@@ -187,6 +198,12 @@ Build frontend:
 npm run build:client
 ```
 
+Backend syntax check:
+
+```bash
+node --check server/src/index.js
+```
+
 Local URLs:
 
 ```text
@@ -235,9 +252,47 @@ File upload storage API
 Multiple links / deadline_links table
 ```
 
+MVP link decision:
+
+```text
+Use deadlines.submission_link.
+Do not create deadline_links in MVP.
+```
+
 ---
 
-## 9. Backend/API Task Workflow
+## 9. Agent Scope Lock
+
+Every AI Agent task must include:
+
+```text
+Assigned task:
+Allowed files/area:
+Expected output:
+Acceptance criteria:
+Required docs:
+Verification required:
+```
+
+Agent must not:
+
+- Add unrelated features.
+- Add screens/endpoints/tables/packages outside the assigned task.
+- Change API/schema silently.
+- Modify unrelated files.
+- Commit secrets.
+- Delete user/team work without confirmation.
+- Fix out-of-scope issues silently.
+
+If the Agent finds an issue outside the assigned task, it must report the issue or add it to:
+
+```text
+docs/implementation/handoff/issues_backlog.md
+```
+
+---
+
+## 10. Backend/API Task Workflow
 
 Backend tasks usually include:
 
@@ -276,7 +331,7 @@ Minimum verification:
 
 ---
 
-## 10. Frontend/UI Task Workflow
+## 11. Frontend/UI Task Workflow
 
 Frontend tasks usually include:
 
@@ -297,7 +352,7 @@ Rules:
 1. Keep UI simple and demo-friendly.
 2. Validate required fields before submit.
 3. Show validation and API error messages.
-4. Use service functions for API calls.
+4. Use service functions for API calls when logic is reused.
 5. Read API base URL from `VITE_API_BASE_URL`.
 6. Use deadline `submission_link` in deadline form/detail.
 7. Do not add unrelated screens.
@@ -314,7 +369,7 @@ Minimum verification:
 
 ---
 
-## 11. Database/Supabase Workflow
+## 12. Database/Supabase Workflow
 
 Database tasks usually include:
 
@@ -347,7 +402,7 @@ Minimum verification:
 
 ---
 
-## 12. QA / Testing Workflow
+## 13. QA / Testing Workflow
 
 Required coverage:
 
@@ -365,7 +420,7 @@ Required coverage:
 
 ---
 
-## 13. Documentation Workflow
+## 14. Documentation Workflow
 
 Update docs when:
 
@@ -375,59 +430,55 @@ Update docs when:
 | Table, field, index, trigger, RLS, seed requirement | `DATABASE_SCHEMA.md` |
 | Install/run/env/Supabase setup | `README_SETUP.md` |
 | Branch/commit/PR/coding workflow | `CODING_GUIDELINES.md` or this file |
+| Agent instructions or scope lock | `AGENTS.md` or `docs/agent-context/` |
 | Task owner/status/output | Assignment sheet |
 
 ---
 
-## 14. AI Agent Usage
+## 15. AI Agent Prompt
 
-Recommended prompt:
+Use the full template in:
 
 ```text
-Please read docs/DEV_WORKFLOW.md first.
-
-Then complete this assigned task:
-
-Nhóm tính năng:
-Tính năng:
-Người làm:
-Trạng thái:
-Mô tả / Output:
-Ưu tiên:
-Deadline:
-Ghi chú:
-
-Implement only this task.
-Follow docs/API_CONTRACT.md and docs/DATABASE_SCHEMA.md if the task touches API or database.
-Report changed files, how to run, how to test, assumptions, and blockers.
+docs/implementation/02_task_template.md
 ```
 
-AI Agent must not:
+Minimal prompt:
 
-- Add unrelated features.
-- Change API/schema silently.
-- Commit secrets.
-- Delete user/team work without confirmation.
+```text
+Read AGENTS.md and docs/DEV_WORKFLOW.md first.
+Complete only this assigned task:
+
+<paste assignment row>
+
+Follow docs/API_CONTRACT.md if the task touches API.
+Follow docs/DATABASE_SCHEMA.md if the task touches database.
+Do not add features outside MVP.
+Report changed files, tests, assumptions, blockers, and out-of-scope issues.
+```
 
 ---
 
-## 15. Required Completion Report
+## 16. Required Completion Report
 
 After finishing a task, report:
 
 ```text
 Summary:
-Files created/updated:
+Files changed:
 Implementation notes:
 How to run:
 How to test:
+Docs updated:
 Assignment sheet update:
-Assumptions / blockers:
+Assumptions:
+Blockers:
+Out-of-scope issues found:
 ```
 
 ---
 
-## 16. Definition of Done
+## 17. Definition of Done
 
 A task is done only when:
 
@@ -438,4 +489,3 @@ A task is done only when:
 5. No secret/private data is committed.
 6. Assignment sheet status/note is updated.
 7. PR is ready for review or task is clearly blocked.
-

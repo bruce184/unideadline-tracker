@@ -125,9 +125,12 @@ unideadline-tracker/
 +-- client/              # React + Tailwind + Vite frontend
 +-- server/              # Node.js + Express backend
 +-- docs/                # Project documents for team and AI Agents
++-- docs/agent-context/  # Short context files for AI Agents
++-- docs/implementation/ # Scope-lock rules, task template, handoff notes
 +-- database/            # SQL schema, seed data, ERD notes
 +-- scripts/             # Optional helper scripts
 +-- .env.example         # Environment variable template
++-- AGENTS.md            # Root AI Agent instructions
 +-- README.md            # Project overview
 +-- package.json         # Root scripts
 ```
@@ -136,11 +139,14 @@ Docs:
 
 | File | Purpose |
 |---|---|
+| `AGENTS.md` | Root Agent rules and strict scope guardrails |
+| `docs/agent-context/00-index.md` | Agent context reading guide |
 | `docs/README_SETUP.md` | Local setup and demo guide |
 | `docs/API_CONTRACT.md` | API source of truth |
 | `docs/DATABASE_SCHEMA.md` | Supabase schema/RLS source of truth |
 | `docs/CODING_GUIDELINES.md` | Code, Git, PR, security rules |
 | `docs/DEV_WORKFLOW.md` | Task workflow and AI Agent usage |
+| `docs/implementation/02_task_template.md` | Task prompt template for devs and Agents |
 
 ---
 
@@ -500,4 +506,3 @@ Before commit:
 git status
 git diff --cached
 ```
-

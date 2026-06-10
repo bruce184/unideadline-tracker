@@ -46,9 +46,12 @@ unideadline-tracker/
 +-- client/              # React + Tailwind + Vite frontend
 +-- server/              # Node.js + Express backend
 +-- docs/                # Project documents for team and AI Agents
++-- docs/agent-context/  # Short context files for AI Agents
++-- docs/implementation/ # Scope-lock rules, task template, handoff notes
 +-- database/            # SQL schema, seed data, ERD notes
 +-- scripts/             # Optional helper scripts
 +-- .env.example         # Environment variable template
++-- AGENTS.md            # Root AI Agent instructions
 +-- README.md            # Project overview
 +-- package.json         # Root scripts
 ```
@@ -135,11 +138,40 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 | File | Purpose |
 |---|---|
+| `AGENTS.md` | Root instructions and strict rules for AI Agents |
+| `docs/agent-context/00-index.md` | Reading guide for Agent context files |
 | `docs/README_SETUP.md` | Local setup, Supabase setup, env, run commands, demo checklist |
 | `docs/API_CONTRACT.md` | API source of truth for frontend/backend integration |
 | `docs/DATABASE_SCHEMA.md` | Supabase schema, constraints, indexes, RLS, seed requirements |
 | `docs/CODING_GUIDELINES.md` | Branch, commit, PR, code style, security, docs sync rules |
 | `docs/DEV_WORKFLOW.md` | Task workflow, role workflow, AI Agent usage, Definition of Done |
+| `docs/implementation/02_task_template.md` | Copy/paste task template for team members and AI Agents |
+| `docs/implementation/handoff/issues_backlog.md` | Out-of-scope issues found during development |
+
+## AI Agent Workflow
+
+Before giving a task to an AI Agent, include the task row from the assignment sheet and ask it to read:
+
+```text
+AGENTS.md
+docs/agent-context/00-index.md
+docs/DEV_WORKFLOW.md
+docs/CODING_GUIDELINES.md
+```
+
+Use this template for assigned tasks:
+
+```text
+docs/implementation/02_task_template.md
+```
+
+Agent rules:
+
+- Implement only the assigned task.
+- Do not add unrelated screens, endpoints, tables, packages, or architecture changes.
+- Do not change API/schema silently.
+- If an issue is outside scope, report it instead of fixing it silently.
+- Never commit `.env`, Supabase service role keys, tokens, passwords, or real user data.
 
 ## Development Workflow
 
@@ -192,4 +224,3 @@ Allowed to commit:
 - Fake placeholder values
 - Public setup instructions
 - Fake demo seed data
-

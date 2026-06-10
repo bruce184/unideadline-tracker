@@ -6,10 +6,13 @@ This document defines coding, Git, pull request, review, and AI-assisted develop
 
 Use it together with:
 
+- `AGENTS.md`
+- `docs/agent-context/00-index.md`
 - `docs/DEV_WORKFLOW.md`
 - `docs/API_CONTRACT.md`
 - `docs/DATABASE_SCHEMA.md`
 - `docs/README_SETUP.md`
+- `docs/implementation/02_task_template.md`
 - The assignment sheet
 
 ---
@@ -25,6 +28,7 @@ Use it together with:
 | Local demo first | Do not break `npm run dev` |
 | Secure by default | Do not expose `.env`, keys, passwords, or service role key |
 | Task-focused PRs | One branch should cover one assigned task/scope |
+| Scope lock | Do not fix unrelated issues silently |
 
 ---
 
@@ -157,6 +161,7 @@ Before pushing:
 5. Confirm schema changes are reflected in `docs/DATABASE_SCHEMA.md`.
 6. Confirm setup changes are reflected in `docs/README_SETUP.md`.
 7. Update the assignment sheet status/note if needed.
+8. Record out-of-scope issues instead of fixing them silently.
 
 Useful commands:
 
@@ -373,10 +378,27 @@ Do not implement unless approved:
 When using an AI Agent:
 
 1. Provide the assigned row from the assignment sheet.
-2. Provide `docs/DEV_WORKFLOW.md`.
-3. Provide API/schema/setup docs when relevant.
-4. Ask the Agent to implement only the assigned task.
-5. Require a final report with changed files, run steps, test steps, assumptions, and blockers.
+2. Ask the Agent to read `AGENTS.md`.
+3. Ask the Agent to read `docs/agent-context/00-index.md`.
+4. Provide `docs/DEV_WORKFLOW.md`.
+5. Use `docs/implementation/02_task_template.md` for non-trivial tasks.
+6. Provide API/schema/setup docs when relevant.
+7. Ask the Agent to implement only the assigned task.
+8. Require a final report with changed files, run steps, test steps, docs updated, assumptions, blockers, and out-of-scope issues.
+
+Agent must not:
+
+- Add unrelated features, screens, endpoints, tables, packages, or architecture changes.
+- Change API/schema silently.
+- Modify unrelated files just because it sees an issue.
+- Commit secrets or real data.
+- Delete team work without confirmation.
+
+If the Agent finds an issue outside the assigned task, record it in:
+
+```text
+docs/implementation/handoff/issues_backlog.md
+```
 
 The Agent must not:
 
@@ -397,4 +419,3 @@ A task is done when:
 4. API/schema/setup docs are updated if needed.
 5. No secret/private data is committed.
 6. Assignment sheet status/note is updated.
-
