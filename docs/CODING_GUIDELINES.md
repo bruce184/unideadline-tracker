@@ -2,46 +2,75 @@
 
 ## 1. Purpose
 
-This file defines coding, Git, commit, branch, and pull request rules for UniDeadline Tracker.
+This document defines coding, Git, pull request, review, and AI-assisted development rules for UniDeadline Tracker.
 
-All members should follow these rules to keep the project consistent and easy to review.
+Use it together with:
 
-## 2. Branch Strategy
+- `docs/DEV_WORKFLOW.md`
+- `docs/API_CONTRACT.md`
+- `docs/DATABASE_SCHEMA.md`
+- `docs/README_SETUP.md`
+- The assignment sheet
 
-| Branch | Purpose |
+---
+
+## 2. Project Principles
+
+| Principle | Rule |
 |---|---|
-| `main` | Stable demo/submission branch |
-| `dev` | Integration branch |
-| `feat/*` | New features |
-| `fix/*` | Bug fixes |
-| `docs/*` | Documentation |
-| `chore/*` | Setup/config tasks |
+| MVP first | Implement assigned MVP tasks only |
+| Simple over complex | Prefer readable student-MVP code |
+| Contract first | API behavior follows `docs/API_CONTRACT.md` |
+| Schema first | Database work follows `docs/DATABASE_SCHEMA.md` |
+| Local demo first | Do not break `npm run dev` |
+| Secure by default | Do not expose `.env`, keys, passwords, or service role key |
+| Task-focused PRs | One branch should cover one assigned task/scope |
+
+---
+
+## 3. Branch Strategy
+
+The project uses a simple branch model:
+
+| Branch pattern | Purpose |
+|---|---|
+| `main` | Main stable/baseline/demo branch |
+| `<member>/<scope>` | Member task branch |
+| `fix/<bug-name>` | Bug fix branch if a generic fix branch is clearer |
+| `docs/<topic>` | Documentation branch |
+| `chore/<topic>` | Setup/config/maintenance branch |
+
+No mandatory `dev` branch is required.
 
 Rules:
 
-- Do not commit directly to `main`.
-- Team members create feature branches from `dev`.
-- Pull Requests should target `dev`.
-- Merge to `main` only when the build is stable and ready for demo/submission.
+1. `main` stores the reviewed stable baseline/demo source.
+2. Do not commit directly to `main` unless the project manager approves.
+3. Create task branches from latest `main`.
+4. Open Pull Requests back into `main`.
+5. Keep branch scope aligned with the assignment sheet.
 
-## 3. Common Branch Names
+Recommended flow:
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b <member>/<scope>
+```
 
 Examples:
 
 ```bash
-feat/auth
-feat/course-management
-feat/deadline-crud
-feat/weekly-dashboard
-feat/reminder
-feat/search-filter
-fix/login-validation
-fix/deadline-status
-docs/api-contract
-chore/project-setup
+git checkout -b hoang/baseline-repo
+git checkout -b khoa/database-schema
+git checkout -b quan/deadline-api
+git checkout -b thien/deadline-ui
+git checkout -b toan/dashboard-reminder
 ```
 
-## 4. Conventional Commit
+---
+
+## 4. Commit Rules
 
 Use Conventional Commit format:
 
@@ -52,86 +81,128 @@ Use Conventional Commit format:
 Examples:
 
 ```bash
+git commit -m "chore(baseline): initialize project source"
 git commit -m "feat(auth): add login page"
-git commit -m "fix(deadline): validate missing due date"
-git commit -m "docs(readme): add local setup guide"
-git commit -m "refactor(api): separate deadline service logic"
-git commit -m "test(dashboard): add weekly dashboard test checklist"
+git commit -m "feat(deadline): add deadline CRUD API"
+git commit -m "fix(course): validate missing course name"
+git commit -m "docs(api): update deadline contract"
 ```
 
-## 5. Commit Types
-
-| Type | Meaning |
-|---|---|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation |
-| `style` | Formatting only, no logic change |
-| `refactor` | Code restructuring |
-| `test` | Test/checklist |
-| `chore` | Config/package/setup |
-
-## 6. Common Scopes
-
-| Scope | Meaning |
-|---|---|
-| `auth` | Login/register/session |
-| `course` | Course management |
-| `deadline` | Deadline CRUD |
-| `status` | Deadline status logic |
-| `dashboard` | Weekly dashboard |
-| `reminder` | Reminder setting/notification |
-| `search` | Search/filter |
-| `api` | Backend API |
-| `ui` | Frontend UI |
-| `db` | Database schema |
-| `docs` | Documentation |
-| `setup` | Project setup |
-
-## 7. Before Push Checklist
-
-Before pushing code:
-
-1. Pull latest `dev`.
-2. Run the part you changed locally.
-3. Do not commit `.env` or secret keys.
-4. Keep commits small and related to one task.
-5. Update docs if API/schema changes.
-6. Update Checklist status if task progress changes.
-7. Create Pull Request into `dev`.
-
-## 8. Pull Request Checklist
-
-A Pull Request should include:
-
-- Task ID
-- Module
-- What changed
-- How to test
-- Screenshots if UI changed
-- Notes about API/schema changes
-- Known issues if any
-
-Example PR description:
+Allowed types:
 
 ```text
-Task ID: BE-003
-Module: Deadline
-Summary:
-- Added create deadline endpoint
-- Added validation for title, course_id, due_date
-- Added user ownership check
-
-How to test:
-1. Run server locally.
-2. Send POST /api/v1/deadlines with valid body.
-3. Check response and Supabase data.
-
-Notes:
-- API contract updated.
+feat
+fix
+docs
+style
+refactor
+test
+chore
 ```
 
-## 9. Frontend Guidelines
+Common scopes:
+
+```text
+baseline
+setup
+auth
+course
+deadline
+status
+dashboard
+reminder
+search
+api
+db
+client
+server
+ui
+docs
+demo
+```
+
+---
+
+## 5. Pull Request Rules
+
+Every PR should include:
+
+- Assignment/task name
+- Owner
+- Summary of changes
+- Files/areas changed
+- How to run
+- How to test
+- Screenshots if UI changed
+- Docs updated if API/schema/setup/workflow changed
+- Known issues or assumptions
+
+PR target:
+
+```text
+base: main
+compare: <member>/<scope>
+```
+
+---
+
+## 6. Before Push Checklist
+
+Before pushing:
+
+1. Pull latest `main`.
+2. Run the part you changed locally.
+3. Confirm `.env` and secrets are not staged.
+4. Confirm API changes are reflected in `docs/API_CONTRACT.md`.
+5. Confirm schema changes are reflected in `docs/DATABASE_SCHEMA.md`.
+6. Confirm setup changes are reflected in `docs/README_SETUP.md`.
+7. Update the assignment sheet status/note if needed.
+
+Useful commands:
+
+```bash
+git status
+npm run dev
+npm run build:client
+npm run dev:server
+npm run lint --prefix client
+```
+
+---
+
+## 7. JavaScript Style
+
+Project language:
+
+```text
+JavaScript with ES modules
+```
+
+Rules:
+
+- Use `import` and `export`.
+- Use `const` by default.
+- Use `let` only when reassignment is needed.
+- Avoid `var`.
+- Use `async/await`.
+- Keep functions focused and readable.
+- Remove unused variables and temporary console logs before merge.
+- Validate inputs before database operations.
+
+Naming:
+
+| Item | Convention | Example |
+|---|---|---|
+| React component | PascalCase | `DeadlineList.jsx` |
+| Hook | camelCase starting with `use` | `useDeadlines.js` |
+| Service file | domain service | `deadlineService.js` |
+| Utility function | camelCase | `formatDueDate()` |
+| Constant | UPPER_SNAKE_CASE | `DEFAULT_PAGE_SIZE` |
+| Database field | snake_case | `submission_link` |
+
+---
+
+## 8. Frontend Guidelines
 
 Frontend stack:
 
@@ -139,29 +210,35 @@ Frontend stack:
 - Tailwind CSS
 - Vite
 
-Rules:
-
-- Keep components small and readable.
-- Avoid hard-coded mock data after API is ready.
-- Use loading and error states.
-- Keep UI responsive for laptop and mobile browser.
-- Validate required form fields before submit.
-- Show clear error messages.
-
-Suggested folder structure:
+Expected structure when needed:
 
 ```text
 client/src/
-├── components/
-├── pages/
-├── routes/
-├── services/
-├── hooks/
-├── utils/
-└── styles/
++-- components/
++-- pages/
++-- routes/
++-- services/
++-- hooks/
++-- utils/
++-- styles/
++-- assets/
 ```
 
-## 10. Backend Guidelines
+Rules:
+
+1. Use functional components.
+2. Show loading, empty, error, and success states.
+3. Validate required fields before submit.
+4. Disable submit buttons while requests are running.
+5. Use service functions instead of scattered `fetch` calls.
+6. Read API base URL from `VITE_API_BASE_URL`.
+7. Use `submission_link` on deadline forms/details for document/submission URL.
+8. Use mock data only when API is not ready and mark it clearly.
+9. Keep UI responsive for laptop and mobile browser.
+
+---
+
+## 9. Backend Guidelines
 
 Backend stack:
 
@@ -169,67 +246,116 @@ Backend stack:
 - Express.js
 - Supabase
 
-Rules:
-
-- Keep routes, controllers, and services separated when project grows.
-- Validate request body before database operation.
-- Return standard response format.
-- Protect private endpoints with auth middleware.
-- Ensure users can only access their own data.
-- Update API contract when endpoint behavior changes.
-
-Suggested folder structure:
+Expected structure when needed:
 
 ```text
 server/src/
-├── config/
-├── routes/
-├── controllers/
-├── services/
-├── middleware/
-├── utils/
-└── index.js
++-- config/
++-- routes/
++-- controllers/
++-- services/
++-- middleware/
++-- utils/
++-- index.js
 ```
 
-## 11. API Response Rule
+Rules:
 
-Success response:
+1. Protect private endpoints with auth middleware.
+2. Validate request body and query params.
+3. Never trust `user_id` from request body.
+4. Set `user_id` from authenticated Supabase user.
+5. Enforce ownership for courses, deadlines, reminders.
+6. Return response shapes from `docs/API_CONTRACT.md`.
+7. Use stable error codes from `docs/API_CONTRACT.md`.
+8. Do not add separate link/upload endpoints in MVP.
 
-```json
-{
-  "ok": true,
-  "data": {},
-  "message": "Success"
-}
+---
+
+## 10. Database and Supabase Rules
+
+Database source of truth:
+
+```text
+docs/DATABASE_SCHEMA.md
 ```
 
-Error response:
+Rules:
 
-```json
-{
-  "ok": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Invalid input"
-  }
-}
-```
+1. Use Supabase PostgreSQL.
+2. Use Supabase Auth.
+3. Core MVP tables: `profiles`, `courses`, `deadlines`, `reminders`.
+4. Store document/submission URL in `deadlines.submission_link`.
+5. Use RLS for app tables.
+6. Do not commit Supabase service role key.
+7. Do not use real private student data in seed/demo data.
 
-## 12. Security Rules
+---
 
-Do not commit:
+## 11. Security Rules
+
+Never commit:
 
 - `.env`
-- Supabase service role key
 - API keys
+- Supabase service role key
 - Passwords
+- Personal tokens
 - Real user data
+- Private credentials
 
-Always check `.gitignore` before committing.
+Allowed to commit:
 
-## 13. MVP Scope Rule
+- `.env.example`
+- Fake placeholder values
+- Public setup instructions
+- Fake demo seed data
 
-Do not implement these in MVP unless approved:
+---
+
+## 12. Local Verification
+
+Install dependencies:
+
+```bash
+npm run install:all
+```
+
+Run frontend and backend:
+
+```bash
+npm run dev
+```
+
+Run frontend only:
+
+```bash
+npm run dev:client
+```
+
+Run backend only:
+
+```bash
+npm run dev:server
+```
+
+Build frontend:
+
+```bash
+npm run build:client
+```
+
+Health check:
+
+```text
+http://localhost:3001/api/v1/health
+```
+
+---
+
+## 13. MVP Boundary
+
+Do not implement unless approved:
 
 - Group collaboration
 - Group task assignment
@@ -237,26 +363,38 @@ Do not implement these in MVP unless approved:
 - Full LMS/Outlook production integration
 - Long-term AI risk prediction
 - Advanced admin analytics
+- File upload storage API
+- Multiple deadline links or `deadline_links` table/API
 
-## 14. Recommended Workflow
+---
 
-```bash
-git checkout dev
-git pull origin dev
+## 14. AI Agent Rules
 
-git checkout -b feat/<task-name>
+When using an AI Agent:
 
-# code here
+1. Provide the assigned row from the assignment sheet.
+2. Provide `docs/DEV_WORKFLOW.md`.
+3. Provide API/schema/setup docs when relevant.
+4. Ask the Agent to implement only the assigned task.
+5. Require a final report with changed files, run steps, test steps, assumptions, and blockers.
 
-git status
-git add .
-git commit -m "feat(scope): short description"
-git push -u origin feat/<task-name>
-```
+The Agent must not:
 
-Then open Pull Request:
+- Add unrelated features.
+- Change API/schema silently.
+- Commit secrets.
+- Remove user/team work without confirmation.
 
-```text
-base: dev
-compare: feat/<task-name>
-```
+---
+
+## 15. Definition of Done
+
+A task is done when:
+
+1. The assigned requirement is completed.
+2. The change stays within MVP scope.
+3. Relevant verification was run or blocker is documented.
+4. API/schema/setup docs are updated if needed.
+5. No secret/private data is committed.
+6. Assignment sheet status/note is updated.
+

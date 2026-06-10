@@ -18,9 +18,12 @@ app.use(express.json())
 app.get('/api/v1/health', (req, res) => {
   res.json({
     ok: true,
+    data: {
+      service: 'server',
+      status: 'running',
+      timestamp: new Date().toISOString(),
+    },
     message: 'UniDeadline Tracker API is running',
-    service: 'server',
-    timestamp: new Date().toISOString(),
   })
 })
 

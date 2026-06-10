@@ -2,135 +2,164 @@
 
 ## 1. Purpose
 
-This file describes the planned database schema for the UniDeadline Tracker MVP.
+This file is the Supabase PostgreSQL schema source of truth for the UniDeadline Tracker MVP.
 
-Database:
+MVP decision:
+
+- Core tables: `profiles`, `courses`, `deadlines`, `reminders`.
+- Submission/document URL is stored in `deadlines.submission_link`.
+- Do not create `deadline_links` in MVP.
+- Multiple links and file upload are future scope.
+
+This file must stay aligned with `docs/API_CONTRACT.md`.
+
+---
+
+## 2. Database Platform
+
+| Item | Decision |
+|---|---|
+| Database | Supabase PostgreSQL |
+| Authentication | Supabase Auth |
+| User identity source | `auth.users` |
+| Public app schema | `public` |
+| Primary key type | `uuid` |
+| Date/time type | `timestamptz` |
+| API datetime format | ISO 8601 |
+| Display timezone | Asia/Ho_Chi_Minh |
+
+Required extension:
+
+```sql
+create extension if not exists pgcrypto;
+```
+
+---
+
+## 3. Ownership Rules
+
+1. Each user owns one profile.
+2. Each course belongs to one user.
+3. Each deadline belongs to one user.
+4. Each deadline must belong to one course owned by the same user.
+5. Reminder records belong to a deadline.
+6. Users can only access their own courses, deadlines, and reminders.
+7. Backend must not trust `user_id` from request body.
+8. Backend must set `user_id` from the authenticated Supabase user.
+
+Ownership path:
 
 ```text
-Supabase PostgreSQL
+auth.users
+  -> profiles
+  -> courses
+  -> deadlines
+  -> reminders
 ```
-
-The schema should support:
-
-- User profile
-- Courses
-- Deadlines
-- Submission status
-- Reminder settings
-- Document/submission links
-- Demo data
-
-## 2. Core Rules
-
-- Each user owns their own data.
-- Each course belongs to one user.
-- Each deadline belongs to one user.
-- Each deadline should belong to one course.
-- Users can only view, edit, and delete their own data.
-- Group collaboration is out of MVP.
-- Mobile native data model is out of MVP.
-- Full LMS/Outlook integration is out of MVP.
-
-## 3. Tables
 
 ---
 
-## 3.1. `profiles`
+## 4. MVP Tables
 
-Stores user profile data linked to Supabase Auth.
+| Table | Purpose |
+|---|---|
+| `profiles` | Public profile data linked to Supabase Auth user |
+| `courses` | Courses created by each user |
+| `deadlines` | Academic deadlines/tasks for a course, including `submission_link` |
+| `reminders` | Reminder rows calculated from deadline due date |
 
-| Field | Type | Required | Note |
-|---|---|---:|---|
-| `id` | uuid | Yes | Primary key, same as Supabase Auth user id |
-| `email` | text | Yes | User email |
-| `display_name` | text | No | Optional display name |
-| `created_at` | timestamptz | Yes | Created time |
-| `updated_at` | timestamptz | No | Updated time |
+---
 
-Suggested SQL:
+## 5. Table: `profiles`
+
+### 5.1. Columns
+
+| Column | Type | Required | Default | Note |
+|---|---|---:|---|---|
+| `id` | uuid | Yes | None | Primary key, references `auth.users(id)` |
+| `email` | text | Yes | None | User email |
+| `display_name` | text | No | None | Max 120 characters |
+| `created_at` | timestamptz | Yes | `now()` | Created timestamp |
+| `updated_at` | timestamptz | Yes | `now()` | Updated timestamp |
+
+### 5.2. SQL
 
 ```sql
-create table if not exists profiles (
-  id uuid primary key,
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
   email text not null,
-  display_name text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  display_name text check (display_name is null or length(display_name) <= 120),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 ```
 
 ---
 
-## 3.2. `courses`
+## 6. Table: `courses`
 
-Stores courses created by each user.
+### 6.1. Columns
 
-| Field | Type | Required | Note |
-|---|---|---:|---|
-| `id` | uuid | Yes | Primary key |
-| `user_id` | uuid | Yes | Owner user |
-| `course_name` | text | Yes | Course name |
-| `course_code` | text | No | Course code |
-| `semester` | text | No | Semester |
-| `created_at` | timestamptz | Yes | Created time |
-| `updated_at` | timestamptz | No | Updated time |
+| Column | Type | Required | Default | Note |
+|---|---|---:|---|---|
+| `id` | uuid | Yes | `gen_random_uuid()` | Primary key |
+| `user_id` | uuid | Yes | None | Owner user |
+| `course_name` | text | Yes | None | Max 120 characters |
+| `course_code` | text | No | None | Max 50 characters |
+| `semester` | text | No | None | Max 50 characters |
+| `created_at` | timestamptz | Yes | `now()` | Created timestamp |
+| `updated_at` | timestamptz | Yes | `now()` | Updated timestamp |
 
-Suggested SQL:
+### 6.2. SQL
 
 ```sql
-create table if not exists courses (
+create table if not exists public.courses (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  course_name text not null,
-  course_code text,
-  semester text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  user_id uuid not null references auth.users(id) on delete cascade,
+  course_name text not null check (length(trim(course_name)) > 0 and length(course_name) <= 120),
+  course_code text check (course_code is null or length(course_code) <= 50),
+  semester text check (semester is null or length(semester) <= 50),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 ```
 
-Validation rules:
+Recommended duplicate prevention:
+
+```sql
+create unique index if not exists uq_courses_user_name_semester
+on public.courses (
+  user_id,
+  lower(trim(course_name)),
+  coalesce(lower(trim(semester)), '')
+);
+```
+
+Rules:
 
 - `course_name` is required.
-- A user should not create duplicate course names in the same semester if validation is implemented.
+- Backend blocks course deletion if deadlines exist.
+- Backend returns `409 COURSE_HAS_DEADLINES` in that case.
 
 ---
 
-## 3.3. `deadlines`
+## 7. Table: `deadlines`
 
-Core table for deadlines.
+### 7.1. Columns
 
-| Field | Type | Required | Note |
-|---|---|---:|---|
-| `id` | uuid | Yes | Primary key |
-| `user_id` | uuid | Yes | Owner user |
-| `course_id` | uuid | Yes | Related course |
-| `title` | text | Yes | Deadline title |
-| `due_date` | timestamptz | Yes | Deadline date/time |
-| `status` | text | Yes | Not Started / In Progress / Submitted / Overdue |
-| `priority` | text | Yes | High / Medium / Low |
-| `description` | text | No | Assignment description |
-| `submission_link` | text | No | Submission URL |
-| `created_at` | timestamptz | Yes | Created time |
-| `updated_at` | timestamptz | No | Updated time |
-
-Suggested SQL:
-
-```sql
-create table if not exists deadlines (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null,
-  course_id uuid not null references courses(id) on delete cascade,
-  title text not null,
-  due_date timestamptz not null,
-  status text not null default 'Not Started',
-  priority text not null default 'Medium',
-  description text,
-  submission_link text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-```
+| Column | Type | Required | Default | Note |
+|---|---|---:|---|---|
+| `id` | uuid | Yes | `gen_random_uuid()` | Primary key |
+| `user_id` | uuid | Yes | None | Owner user |
+| `course_id` | uuid | Yes | None | Related course |
+| `title` | text | Yes | None | Max 160 characters |
+| `due_date` | timestamptz | Yes | None | Deadline date/time |
+| `status` | text | Yes | `Not Started` | Check constraint |
+| `priority` | text | Yes | `Medium` | Check constraint |
+| `description` | text | No | None | Max 2000 characters |
+| `submission_link` | text | No | None | HTTP/HTTPS URL |
+| `created_at` | timestamptz | Yes | `now()` | Created timestamp |
+| `updated_at` | timestamptz | Yes | `now()` | Updated timestamp |
 
 Allowed status values:
 
@@ -149,113 +178,367 @@ Medium
 Low
 ```
 
-Business rules:
+### 7.2. SQL
 
-- Deadline must have `title`, `course_id`, and `due_date`.
-- Deadline must belong to the current user.
-- Deadline can become `Overdue` when `due_date < now` and status is not `Submitted`.
+```sql
+create table if not exists public.deadlines (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  course_id uuid not null references public.courses(id) on delete no action,
+  title text not null check (length(trim(title)) > 0 and length(title) <= 160),
+  due_date timestamptz not null,
+  status text not null default 'Not Started'
+    check (status in ('Not Started', 'In Progress', 'Submitted', 'Overdue')),
+  priority text not null default 'Medium'
+    check (priority in ('High', 'Medium', 'Low')),
+  description text check (description is null or length(description) <= 2000),
+  submission_link text check (
+    submission_link is null
+    or submission_link ~* '^https?://'
+  ),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+```
+
+Rules:
+
+- Deadline must have `course_id`, `title`, and `due_date`.
+- Backend must ensure `course_id` belongs to the current user.
+- `Overdue` is derived when `due_date < now()` and status is not `Submitted`.
+- `submission_link` stores the MVP document/submission link.
+- Do not create a separate link table in MVP.
 
 ---
 
-## 3.4. `reminders`
+## 8. Table: `reminders`
 
-Stores reminder settings and sending status.
+### 8.1. Columns
 
-| Field | Type | Required | Note |
-|---|---|---:|---|
-| `id` | uuid | Yes | Primary key |
-| `deadline_id` | uuid | Yes | Related deadline |
-| `reminder_time` | timestamptz | Yes | Reminder time |
-| `channel` | text | Yes | in_app / email |
-| `sent_status` | text | Yes | pending / sent / failed |
-| `created_at` | timestamptz | Yes | Created time |
+| Column | Type | Required | Default | Note |
+|---|---|---:|---|---|
+| `id` | uuid | Yes | `gen_random_uuid()` | Primary key |
+| `deadline_id` | uuid | Yes | None | Related deadline |
+| `reminder_time` | timestamptz | Yes | None | Calculated reminder time |
+| `channel` | text | Yes | `in_app` | Check constraint |
+| `sent_status` | text | Yes | `pending` | Check constraint |
+| `created_at` | timestamptz | Yes | `now()` | Created timestamp |
 
-Suggested SQL:
+Allowed channels:
+
+```text
+in_app
+email
+```
+
+Allowed sent status:
+
+```text
+pending
+sent
+failed
+```
+
+### 8.2. SQL
 
 ```sql
-create table if not exists reminders (
+create table if not exists public.reminders (
   id uuid primary key default gen_random_uuid(),
-  deadline_id uuid not null references deadlines(id) on delete cascade,
+  deadline_id uuid not null references public.deadlines(id) on delete cascade,
   reminder_time timestamptz not null,
-  channel text not null default 'in_app',
-  sent_status text not null default 'pending',
-  created_at timestamptz default now()
+  channel text not null default 'in_app'
+    check (channel in ('in_app', 'email')),
+  sent_status text not null default 'pending'
+    check (sent_status in ('pending', 'sent', 'failed')),
+  created_at timestamptz not null default now()
 );
 ```
 
-MVP reminder rule:
+Recommended duplicate prevention:
 
-- Default reminder offsets: 7 days, 3 days, 1 day.
-- In-app reminder first.
-- Email reminder only if time allows.
-- Submitted deadlines should not continue sending reminders.
+```sql
+create unique index if not exists uq_reminders_deadline_time_channel
+on public.reminders (deadline_id, reminder_time, channel);
+```
+
+Rules:
+
+- API receives `reminder_offsets`.
+- Backend converts offsets into `reminder_time`.
+- MVP offsets: `7`, `3`, `1`, `0`.
+- Submitted deadlines should not create new reminders.
+- If reminder settings are disabled, pending reminders for that deadline should be removed.
 
 ---
 
-## 3.5. `deadline_links`
+## 9. Relationships and Delete Behavior
 
-Stores document links or submission links related to deadline.
+| Relationship | Rule |
+|---|---|
+| `profiles.id -> auth.users.id` | One profile per auth user |
+| `courses.user_id -> auth.users.id` | One user has many courses |
+| `deadlines.user_id -> auth.users.id` | One user has many deadlines |
+| `deadlines.course_id -> courses.id` | One course has many deadlines |
+| `reminders.deadline_id -> deadlines.id` | One deadline has many reminders |
 
-| Field | Type | Required | Note |
-|---|---|---:|---|
-| `id` | uuid | Yes | Primary key |
-| `deadline_id` | uuid | Yes | Related deadline |
-| `url` | text | Yes | Link URL |
-| `file_name` | text | No | Display name |
-| `file_type` | text | No | link / file |
-| `created_at` | timestamptz | Yes | Created time |
+Delete behavior:
 
-Suggested SQL:
+| Deleted record | Expected behavior |
+|---|---|
+| Auth user | Delete related profile/courses/deadlines through cascade path |
+| Course | Block deletion if deadlines exist |
+| Deadline | Delete related reminders |
+| Reminder | Delete only that reminder |
+
+---
+
+## 10. Indexes
 
 ```sql
-create table if not exists deadline_links (
-  id uuid primary key default gen_random_uuid(),
-  deadline_id uuid not null references deadlines(id) on delete cascade,
-  url text not null,
-  file_name text,
-  file_type text default 'link',
-  created_at timestamptz default now()
+create index if not exists idx_courses_user_id
+on public.courses(user_id);
+
+create index if not exists idx_courses_user_semester
+on public.courses(user_id, semester);
+
+create index if not exists idx_deadlines_user_id
+on public.deadlines(user_id);
+
+create index if not exists idx_deadlines_course_id
+on public.deadlines(course_id);
+
+create index if not exists idx_deadlines_user_due_date
+on public.deadlines(user_id, due_date);
+
+create index if not exists idx_deadlines_user_status
+on public.deadlines(user_id, status);
+
+create index if not exists idx_deadlines_user_priority
+on public.deadlines(user_id, priority);
+
+create index if not exists idx_reminders_deadline_id
+on public.reminders(deadline_id);
+
+create index if not exists idx_reminders_time_status
+on public.reminders(reminder_time, sent_status);
+```
+
+---
+
+## 11. Updated Timestamp Trigger
+
+```sql
+create or replace function public.set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+```
+
+```sql
+drop trigger if exists trg_profiles_updated_at on public.profiles;
+create trigger trg_profiles_updated_at
+before update on public.profiles
+for each row execute function public.set_updated_at();
+
+drop trigger if exists trg_courses_updated_at on public.courses;
+create trigger trg_courses_updated_at
+before update on public.courses
+for each row execute function public.set_updated_at();
+
+drop trigger if exists trg_deadlines_updated_at on public.deadlines;
+create trigger trg_deadlines_updated_at
+before update on public.deadlines
+for each row execute function public.set_updated_at();
+```
+
+---
+
+## 12. Row Level Security
+
+Enable RLS:
+
+```sql
+alter table public.profiles enable row level security;
+alter table public.courses enable row level security;
+alter table public.deadlines enable row level security;
+alter table public.reminders enable row level security;
+```
+
+### 12.1. Profiles
+
+```sql
+create policy "Users can view own profile"
+on public.profiles for select
+using (auth.uid() = id);
+
+create policy "Users can update own profile"
+on public.profiles for update
+using (auth.uid() = id)
+with check (auth.uid() = id);
+```
+
+### 12.2. Courses
+
+```sql
+create policy "Users can view own courses"
+on public.courses for select
+using (auth.uid() = user_id);
+
+create policy "Users can insert own courses"
+on public.courses for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update own courses"
+on public.courses for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users can delete own courses"
+on public.courses for delete
+using (auth.uid() = user_id);
+```
+
+### 12.3. Deadlines
+
+```sql
+create policy "Users can view own deadlines"
+on public.deadlines for select
+using (auth.uid() = user_id);
+
+create policy "Users can insert own deadlines"
+on public.deadlines for insert
+with check (auth.uid() = user_id);
+
+create policy "Users can update own deadlines"
+on public.deadlines for update
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users can delete own deadlines"
+on public.deadlines for delete
+using (auth.uid() = user_id);
+```
+
+### 12.4. Reminders
+
+Reminder ownership is checked through the related deadline.
+
+```sql
+create policy "Users can view own reminders"
+on public.reminders for select
+using (
+  exists (
+    select 1 from public.deadlines d
+    where d.id = reminders.deadline_id
+      and d.user_id = auth.uid()
+  )
+);
+
+create policy "Users can insert own reminders"
+on public.reminders for insert
+with check (
+  exists (
+    select 1 from public.deadlines d
+    where d.id = reminders.deadline_id
+      and d.user_id = auth.uid()
+  )
+);
+
+create policy "Users can update own reminders"
+on public.reminders for update
+using (
+  exists (
+    select 1 from public.deadlines d
+    where d.id = reminders.deadline_id
+      and d.user_id = auth.uid()
+  )
+)
+with check (
+  exists (
+    select 1 from public.deadlines d
+    where d.id = reminders.deadline_id
+      and d.user_id = auth.uid()
+  )
+);
+
+create policy "Users can delete own reminders"
+on public.reminders for delete
+using (
+  exists (
+    select 1 from public.deadlines d
+    where d.id = reminders.deadline_id
+      and d.user_id = auth.uid()
+  )
 );
 ```
 
-MVP rule:
+---
 
-- Store URL first.
-- Upload file only if core MVP is stable.
+## 13. Suggested SQL Files
+
+Baseline setup should create:
+
+```text
+database/schema.sql
+database/seed.sql
+```
+
+Recommended order in `schema.sql`:
+
+1. Extensions
+2. Tables
+3. Unique constraints/indexes
+4. Normal indexes
+5. Updated_at trigger function
+6. Triggers
+7. RLS enable statements
+8. RLS policies
 
 ---
 
-## 4. Suggested Indexes
+## 14. Demo Seed Data
 
-```sql
-create index if not exists idx_courses_user_id on courses(user_id);
-create index if not exists idx_deadlines_user_id on deadlines(user_id);
-create index if not exists idx_deadlines_course_id on deadlines(course_id);
-create index if not exists idx_deadlines_due_date on deadlines(due_date);
-create index if not exists idx_reminders_deadline_id on reminders(deadline_id);
-create index if not exists idx_deadline_links_deadline_id on deadline_links(deadline_id);
+Minimum demo data:
+
+| Data | Minimum |
+|---|---:|
+| Demo account | 1 |
+| Courses | 5 |
+| Deadlines | 20 |
+| Pending reminders | 6 |
+| Deadlines with `submission_link` | 8 |
+
+Deadline coverage:
+
+- Due today
+- Due this week
+- Due next week
+- Overdue
+- Submitted
+- High, Medium, Low priorities
+- With and without `submission_link`
+
+Do not use real private student data.
+
+---
+
+## 15. Future Scope Tables
+
+Do not create these in MVP unless approved:
+
+```text
+deadline_links
+file_uploads
+projects
+project_members
+group_tasks
+invitations
+lms_integrations
+calendar_integrations
+ai_prediction_logs
+admin_reports
 ```
 
-## 5. Demo Seed Data
-
-For demo, prepare:
-
-- At least 1 demo account
-- At least 5 courses
-- At least 20 deadlines
-- Deadlines for today, this week, next week, overdue, and submitted
-- Priority values: High, Medium, Low
-- Status values: Not Started, In Progress, Submitted, Overdue
-
-## 6. Future Scope Tables
-
-Do not implement these in MVP unless approved:
-
-- `projects`
-- `project_members`
-- `group_tasks`
-- `invitations`
-- `lms_integrations`
-- `ai_prediction_logs`
-
-These belong to v2.0 or PoC.

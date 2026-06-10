@@ -2,11 +2,17 @@
 
 ## 1. Purpose
 
-This file defines the API contract between frontend and backend.
+This file is the API source of truth for UniDeadline Tracker.
 
-Frontend and backend must update this file when endpoint behavior changes.
+Frontend and backend must follow this contract. If endpoint behavior, request fields, response fields, validation, or error codes change, update this file in the same task.
 
-The purpose is to avoid mismatch between UI, API, and database.
+MVP decision:
+
+- Store document/submission URL directly in `deadlines.submission_link`.
+- Do not create `deadline_links` table or `/links` endpoints in MVP.
+- File upload and multiple links are future scope.
+
+---
 
 ## 2. Base URL
 
@@ -16,24 +22,44 @@ Local backend:
 http://localhost:3001/api/v1
 ```
 
-Optional deployed backend:
+Frontend env:
 
-```text
-https://your-backend-url/api/v1
+```env
+VITE_API_BASE_URL=http://localhost:3001/api/v1
 ```
 
-## 3. Authentication
+---
 
-Protected endpoints require a bearer token from Supabase Auth.
+## 3. API Conventions
 
-Header format:
+| Item | Rule |
+|---|---|
+| Request format | JSON |
+| Response format | JSON |
+| ID format | UUID string |
+| Date/time format | ISO 8601 |
+| Display timezone | Asia/Ho_Chi_Minh |
+| Auth provider | Supabase Auth |
+| Protected auth header | `Authorization: Bearer <access_token>` |
+
+Protected endpoints require:
 
 ```http
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
 
-## 4. Standard Success Response
+Public endpoints:
+
+- `GET /health`
+
+All other endpoints are protected.
+
+---
+
+## 4. Standard Response Format
+
+Success response:
 
 ```json
 {
@@ -43,66 +69,294 @@ Content-Type: application/json
 }
 ```
 
-## 5. Standard Error Response
+Paginated list response:
+
+```json
+{
+  "ok": true,
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "total_pages": 0
+  },
+  "message": "Success"
+}
+```
+
+Error response:
 
 ```json
 {
   "ok": false,
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Invalid input"
+    "message": "Invalid input",
+    "details": [
+      {
+        "field": "title",
+        "message": "Title is required"
+      }
+    ]
   }
 }
 ```
 
-## 6. Common Status Codes
+`details` is optional.
 
-| Code | Meaning |
-|---|---|
-| 200 | OK |
-| 201 | Created |
-| 400 | Validation error |
-| 401 | Unauthorized |
-| 403 | Forbidden |
-| 404 | Not found |
-| 500 | Internal server error |
+---
 
-## 7. Core Endpoints
+## 5. Error Codes
 
-### 7.1. Health Check
+| HTTP | Code | Meaning |
+|---:|---|---|
+| 400 | `VALIDATION_ERROR` | Invalid request body |
+| 400 | `INVALID_QUERY` | Invalid query/filter/sort/date range |
+| 400 | `INVALID_URL` | `submission_link` is not a valid HTTP/HTTPS URL |
+| 401 | `UNAUTHORIZED` | Missing/invalid/expired token |
+| 404 | `NOT_FOUND` | Resource does not exist or does not belong to current user |
+| 409 | `CONFLICT` | Duplicate or conflicting data |
+| 409 | `COURSE_HAS_DEADLINES` | Course cannot be deleted because it still has deadlines |
+| 500 | `INTERNAL_SERVER_ERROR` | Unexpected server/database error |
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/health` | No | Check whether backend API is running |
+For private resources, return `404 NOT_FOUND` when the resource exists but does not belong to the current user.
 
-Example response:
+---
+
+## 6. Data Objects
+
+### 6.1. Profile
 
 ```json
 {
-  "ok": true,
-  "message": "UniDeadline Tracker API is running",
-  "service": "server",
-  "timestamp": "2026-05-22T00:00:00.000Z"
+  "id": "user-uuid",
+  "email": "student@example.com",
+  "display_name": "Student Name",
+  "created_at": "2026-06-10T08:00:00.000Z",
+  "updated_at": "2026-06-10T08:00:00.000Z"
 }
+```
+
+### 6.2. Course
+
+```json
+{
+  "id": "course-uuid",
+  "user_id": "user-uuid",
+  "course_name": "Software Project Management",
+  "course_code": "BIT304V1",
+  "semester": "SUM2026",
+  "created_at": "2026-06-10T08:00:00.000Z",
+  "updated_at": "2026-06-10T08:00:00.000Z"
+}
+```
+
+### 6.3. Deadline
+
+```json
+{
+  "id": "deadline-uuid",
+  "user_id": "user-uuid",
+  "course_id": "course-uuid",
+  "title": "Submit project report",
+  "due_date": "2026-06-20T23:59:00+07:00",
+  "status": "Not Started",
+  "priority": "High",
+  "description": "Submit the final project report",
+  "submission_link": "https://example.com/submit",
+  "course": {
+    "id": "course-uuid",
+    "course_name": "Software Project Management",
+    "course_code": "BIT304V1"
+  },
+  "created_at": "2026-06-10T08:00:00.000Z",
+  "updated_at": "2026-06-10T08:00:00.000Z"
+}
+```
+
+Allowed status values:
+
+```text
+Not Started
+In Progress
+Submitted
+Overdue
+```
+
+Allowed priority values:
+
+```text
+High
+Medium
+Low
+```
+
+Rules:
+
+- `Not Started`, `In Progress`, and `Submitted` are user-selectable.
+- `Overdue` is derived when `due_date < now` and status is not `Submitted`.
+- `submission_link` is optional.
+- If `submission_link` is provided, it must be a valid HTTP/HTTPS URL.
+
+### 6.4. Reminder
+
+```json
+{
+  "id": "reminder-uuid",
+  "deadline_id": "deadline-uuid",
+  "reminder_time": "2026-06-19T23:59:00+07:00",
+  "channel": "in_app",
+  "sent_status": "pending",
+  "deadline": {
+    "id": "deadline-uuid",
+    "title": "Submit project report",
+    "due_date": "2026-06-20T23:59:00+07:00"
+  },
+  "created_at": "2026-06-10T08:00:00.000Z"
+}
+```
+
+Allowed reminder channels:
+
+```text
+in_app
+email
+```
+
+Allowed sent status values:
+
+```text
+pending
+sent
+failed
+```
+
+MVP channel:
+
+- `in_app` is required.
+- `email` is optional future work unless approved.
+
+---
+
+## 7. Validation Rules
+
+### 7.1. Course
+
+| Field | Required | Rule |
+|---|---:|---|
+| `course_name` | Yes | Non-empty, max 120 characters |
+| `course_code` | No | Max 50 characters |
+| `semester` | No | Max 50 characters |
+
+A user should not create duplicate course names in the same semester.
+
+### 7.2. Deadline
+
+| Field | Required | Rule |
+|---|---:|---|
+| `course_id` | Yes | UUID of course owned by current user |
+| `title` | Yes | Non-empty, max 160 characters |
+| `due_date` | Yes | Valid ISO 8601 datetime |
+| `status` | No | Allowed status value |
+| `priority` | No | Allowed priority value |
+| `description` | No | Max 2000 characters |
+| `submission_link` | No | Valid HTTP/HTTPS URL |
+
+Defaults:
+
+| Field | Default |
+|---|---|
+| `status` | `Not Started` |
+| `priority` | `Medium` |
+
+### 7.3. Reminder
+
+| Field | Required | Rule |
+|---|---:|---|
+| `enabled` | Yes | Boolean |
+| `reminder_offsets` | Yes when enabled | Array of offsets before due date |
+| `channel` | No | `in_app` by default |
+
+MVP reminder offsets:
+
+```text
+7
+3
+1
+0
+```
+
+Backend converts offsets into reminder rows.
+
+---
+
+## 8. Endpoint Summary
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| GET | `/health` | No | Backend health check |
+| GET | `/me` | Yes | Get current profile |
+| GET | `/courses` | Yes | List current user's courses |
+| POST | `/courses` | Yes | Create course |
+| PATCH | `/courses/:id` | Yes | Update course |
+| DELETE | `/courses/:id` | Yes | Delete course |
+| GET | `/deadlines` | Yes | List current user's deadlines |
+| POST | `/deadlines` | Yes | Create deadline |
+| GET | `/deadlines/:id` | Yes | Get deadline detail |
+| PATCH | `/deadlines/:id` | Yes | Update deadline, including status and `submission_link` |
+| DELETE | `/deadlines/:id` | Yes | Delete deadline |
+| GET | `/dashboard/weekly` | Yes | Get weekly dashboard data |
+| GET | `/reminders` | Yes | List current user's reminders |
+| PATCH | `/deadlines/:id/reminder` | Yes | Enable/disable reminder settings |
+
+Do not add these MVP endpoints:
+
+```text
+Separate deadline link endpoints
+POST /files
+POST /uploads
 ```
 
 ---
 
-## 7.2. Auth / Current User
+## 9. Health
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/me` | Yes | Get current logged-in user/profile |
+### 9.1. `GET /health`
 
-Example response:
+Success response:
 
 ```json
 {
   "ok": true,
   "data": {
-    "id": "user-id",
+    "service": "server",
+    "status": "running",
+    "timestamp": "2026-06-10T08:00:00.000Z"
+  },
+  "message": "UniDeadline Tracker API is running"
+}
+```
+
+---
+
+## 10. Auth
+
+### 10.1. `GET /me`
+
+Returns the current user's profile.
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "id": "user-uuid",
     "email": "student@example.com",
-    "display_name": "Student Name"
+    "display_name": "Student Name",
+    "created_at": "2026-06-10T08:00:00.000Z",
+    "updated_at": "2026-06-10T08:00:00.000Z"
   },
   "message": "Current user loaded"
 }
@@ -110,38 +364,39 @@ Example response:
 
 ---
 
-## 7.3. Courses
+## 11. Courses
 
-### Get courses
+### 11.1. `GET /courses`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/courses` | Yes | Get user's courses |
+Query:
 
-Example response:
+| Query | Default | Rule |
+|---|---|---|
+| `page` | `1` | Minimum 1 |
+| `limit` | `20` | 1-100 |
+| `q` | none | Search course name/code |
+| `semester` | none | Filter semester |
+| `sort_order` | `asc` | `asc` or `desc` |
+
+Success response:
 
 ```json
 {
   "ok": true,
-  "data": [
-    {
-      "id": "course-id",
-      "course_name": "Software Project Management",
-      "course_code": "BIT304V1",
-      "semester": "SUM2026"
-    }
-  ],
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "total_pages": 0
+  },
   "message": "Courses loaded"
 }
 ```
 
-### Create course
+### 11.2. `POST /courses`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/courses` | Yes | Create a course |
-
-Request body:
+Request:
 
 ```json
 {
@@ -151,61 +406,67 @@ Request body:
 }
 ```
 
-Validation:
+Success: `201 Created`
 
-- `course_name` is required
-- `course_code` is optional
-- `semester` is optional
+### 11.3. `PATCH /courses/:id`
 
-### Update course
+Request can include any course fields. At least one valid field is required.
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| PATCH | `/courses/:id` | Yes | Update a course |
+Success: `200 OK`
 
-### Delete course
+### 11.4. `DELETE /courses/:id`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| DELETE | `/courses/:id` | Yes | Delete a course |
+MVP rule:
 
-Important rule:
+- If the course has deadlines, block deletion.
+- Return `409 COURSE_HAS_DEADLINES`.
 
-- User can only access their own courses.
-- If a course has related deadlines, backend should warn or prevent deletion depending on implementation decision.
+Success: `200 OK`
 
 ---
 
-## 7.4. Deadlines
+## 12. Deadlines
 
-### Get deadlines
+### 12.1. `GET /deadlines`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/deadlines` | Yes | Get user's deadlines |
+Query:
 
-Possible query parameters:
-
-| Query | Example | Description |
+| Query | Default | Rule |
 |---|---|---|
-| `course_id` | `/deadlines?course_id=abc` | Filter by course |
-| `status` | `/deadlines?status=In Progress` | Filter by status |
-| `priority` | `/deadlines?priority=High` | Filter by priority |
-| `from` | `/deadlines?from=2026-06-01` | Start date |
-| `to` | `/deadlines?to=2026-06-30` | End date |
-| `q` | `/deadlines?q=report` | Search keyword |
+| `page` | `1` | Minimum 1 |
+| `limit` | `20` | 1-100 |
+| `course_id` | none | Filter by course |
+| `status` | none | Allowed status |
+| `priority` | none | Allowed priority |
+| `from` | none | Start date |
+| `to` | none | End date |
+| `q` | none | Search title/description |
+| `sort_by` | `due_date` | `due_date`, `created_at`, `priority`, `status` |
+| `sort_order` | `asc` | `asc` or `desc` |
 
-### Create deadline
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/deadlines` | Yes | Create a deadline |
-
-Request body:
+Success response:
 
 ```json
 {
-  "course_id": "course-id",
+  "ok": true,
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "total_pages": 0
+  },
+  "message": "Deadlines loaded"
+}
+```
+
+### 12.2. `POST /deadlines`
+
+Request:
+
+```json
+{
+  "course_id": "course-uuid",
   "title": "Submit project report",
   "due_date": "2026-06-20T23:59:00+07:00",
   "status": "Not Started",
@@ -215,65 +476,85 @@ Request body:
 }
 ```
 
-Required fields:
+Minimum request:
 
-- `course_id`
-- `title`
-- `due_date`
+```json
+{
+  "course_id": "course-uuid",
+  "title": "Submit project report",
+  "due_date": "2026-06-20T23:59:00+07:00"
+}
+```
 
-Optional fields:
+Success: `201 Created`
 
-- `status`
-- `priority`
-- `description`
-- `submission_link`
+### 12.3. `GET /deadlines/:id`
 
-### Get deadline detail
+Returns deadline detail with course and reminder summary.
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/deadlines/:id` | Yes | Get deadline detail |
+Success: `200 OK`
 
-### Update deadline
+### 12.4. `PATCH /deadlines/:id`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| PATCH | `/deadlines/:id` | Yes | Update deadline |
+Request can include any deadline fields:
 
-### Delete deadline
+```json
+{
+  "course_id": "course-uuid",
+  "title": "Submit updated project report",
+  "due_date": "2026-06-21T23:59:00+07:00",
+  "status": "In Progress",
+  "priority": "High",
+  "description": "Updated description",
+  "submission_link": "https://example.com/submit"
+}
+```
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| DELETE | `/deadlines/:id` | Yes | Delete deadline |
+Rules:
 
-Important rules:
+- At least one valid field is required.
+- `course_id`, if changed, must belong to current user.
+- `submission_link`, if provided, must be HTTP/HTTPS.
+- If status becomes `Submitted`, pending reminders should not trigger.
 
-- User can only access their own deadlines.
-- Deadline must belong to a course.
-- Overdue can be computed when `due_date < now` and status is not `Submitted`.
+Success: `200 OK`
+
+### 12.5. `DELETE /deadlines/:id`
+
+Deletes one deadline owned by the current user.
+
+Success: `200 OK`
 
 ---
 
-## 7.5. Dashboard
+## 13. Dashboard
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/dashboard/weekly` | Yes | Get weekly deadline dashboard |
+### 13.1. `GET /dashboard/weekly`
 
-Possible query:
+Query:
 
-```text
-/dashboard/weekly?week_start=2026-06-10
-```
+| Query | Default | Rule |
+|---|---|---|
+| `week_start` | current week Monday | `YYYY-MM-DD` |
 
-Example response:
+Week starts on Monday and ends on Sunday.
+
+Success response:
 
 ```json
 {
   "ok": true,
   "data": {
-    "week_start": "2026-06-10",
-    "week_end": "2026-06-16",
+    "week_start": "2026-06-08",
+    "week_end": "2026-06-14",
+    "summary": {
+      "total": 8,
+      "not_started": 2,
+      "in_progress": 3,
+      "submitted": 2,
+      "overdue": 1,
+      "high_priority": 3
+    },
     "deadlines": []
   },
   "message": "Weekly dashboard loaded"
@@ -282,21 +563,39 @@ Example response:
 
 ---
 
-## 7.6. Reminders
+## 14. Reminders
 
-### Get reminders
+### 14.1. `GET /reminders`
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| GET | `/reminders` | Yes | Get reminder list |
+Query:
 
-### Update reminder setting
+| Query | Default | Rule |
+|---|---|---|
+| `page` | `1` | Minimum 1 |
+| `limit` | `20` | 1-100 |
+| `sent_status` | none | `pending`, `sent`, `failed` |
+| `from` | none | Reminder time start |
+| `to` | none | Reminder time end |
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| PATCH | `/deadlines/:id/reminder` | Yes | Enable or disable reminder |
+Success response:
 
-Request body:
+```json
+{
+  "ok": true,
+  "data": [],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 0,
+    "total_pages": 0
+  },
+  "message": "Reminders loaded"
+}
+```
+
+### 14.2. `PATCH /deadlines/:id/reminder`
+
+Enable reminders:
 
 ```json
 {
@@ -306,62 +605,60 @@ Request body:
 }
 ```
 
-MVP rule:
-
-- In-app reminder first.
-- Email reminder only if time allows.
-- Submitted deadlines should not continue sending reminders.
-
----
-
-## 7.7. Document / Link
-
-### Add link
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/deadlines/:id/links` | Yes | Add document or submission link |
-
-Request body:
+Disable reminders:
 
 ```json
 {
-  "url": "https://example.com/document",
-  "file_name": "Project Report",
-  "file_type": "link"
+  "enabled": false
 }
 ```
 
-### Delete link
+Rules:
 
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| DELETE | `/deadline-links/:id` | Yes | Delete document or submission link |
-
-MVP rule:
-
-- Store URL first.
-- File upload is optional and only if stable.
+- Backend converts offsets to reminder rows.
+- If disabled, remove pending reminders for that deadline.
+- Submitted deadlines should not create new reminders.
 
 ---
 
-## 8. API Status Tracking
+## 15. Ownership and Security
 
-Use the Google Sheets checklist to track each API status:
+Backend must:
 
-- Not Started
-- Backend Done
-- FE Integrated
-- QA Passed
-- Changed
+1. Identify current user from Supabase access token.
+2. Never trust `user_id` from request body.
+3. Set `user_id` from the authenticated user on create.
+4. Enforce user ownership for courses, deadlines, reminders.
+5. Ensure deadline course belongs to current user.
+6. Return `404 NOT_FOUND` for private resources missing or not owned by user.
+7. Never expose secret keys, stack traces, SQL errors, or service role key.
 
-## 9. MVP Scope Rule
+---
 
-Do not add the following into MVP endpoints unless approved:
+## 16. Frontend Integration Rules
+
+Frontend should:
+
+1. Use `VITE_API_BASE_URL`.
+2. Attach bearer token for protected endpoints.
+3. Parse `ok`, `data`, `meta`, `message`, and `error`.
+4. Show loading, empty, success, validation error, and API error states.
+5. Use `submission_link` from deadline detail/list for document/submission URL.
+6. Treat `401` as login/session problem.
+
+---
+
+## 17. MVP Boundary
+
+Do not add these unless approved:
 
 - Group collaboration
 - Group task assignment
-- Native mobile app
+- Public member progress tracking
+- Native mobile app APIs
 - Full LMS/Outlook production integration
 - Long-term AI risk prediction
+- AI automatic detailed scheduling by hour
 - Advanced admin analytics
+- File upload APIs
+- Multiple document/link API

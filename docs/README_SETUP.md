@@ -2,28 +2,75 @@
 
 ## 1. Purpose
 
-This file explains how to set up and run UniDeadline Tracker locally for development and demo.
+This file explains how to set up, run, verify, and demo UniDeadline Tracker locally.
 
-UniDeadline Tracker is a responsive web app for students to manage courses, deadlines, submission status, weekly dashboard, reminders, and basic search/filter.
+Use this file when:
 
-## 2. Tech Stack
+- A new team member clones the repository.
+- A baseline owner prepares the source for the team.
+- A developer runs frontend/backend locally.
+- An AI Agent needs setup context.
 
-- Frontend: React + Tailwind CSS
-- Backend: Node.js + Express.js
-- Database: Supabase PostgreSQL
-- Authentication: Supabase Auth
-- Version Control: GitHub
-- Demo Strategy: Local demo first, online deployment if time allows
+---
 
-## 3. Requirements
+## 2. Project Summary
 
-Before running the project, install:
+UniDeadline Tracker is a responsive web app for students to manage courses, deadlines, submission status, weekly dashboard, reminders, and submission links.
+
+Local demo is required. Online deployment is optional.
+
+MVP modules:
+
+```text
+Auth / User Account
+Course Management
+Deadline Management
+Submission Status Tracking
+Weekly Dashboard
+Reminder & Priority
+Search & Filter
+Responsive Web App
+Basic In-app Reminder
+Submission Link Storage
+```
+
+MVP link decision:
+
+- Store document/submission URL in `deadlines.submission_link`.
+- Do not create a separate `deadline_links` table/API in MVP.
+
+---
+
+## 3. Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React + Tailwind CSS + Vite |
+| Backend | Node.js + Express.js |
+| Database | Supabase PostgreSQL |
+| Authentication | Supabase Auth |
+| Version control | Git + GitHub |
+| Package manager | npm |
+
+Local URLs:
+
+```text
+Frontend: http://localhost:5173
+Backend:  http://localhost:3001/api/v1
+Health:   http://localhost:3001/api/v1/health
+```
+
+---
+
+## 4. Prerequisites
+
+Install:
 
 - Node.js 18 or newer
 - npm
 - Git
 - VS Code
-- Supabase project account
+- Supabase account
 
 Check versions:
 
@@ -33,52 +80,101 @@ npm -v
 git --version
 ```
 
-## 4. Clone Repository
+---
+
+## 5. Clone and Branch Setup
+
+Clone repository:
 
 ```bash
 git clone https://github.com/bruce184/unideadline-tracker.git
 cd unideadline-tracker
 ```
 
-Switch to the development branch:
+Use `main` as the stable/baseline/demo branch:
 
 ```bash
-git checkout dev
-git pull origin dev
+git checkout main
+git pull origin main
 ```
 
-## 5. Install Dependencies
+Create a task branch:
 
-From the root folder:
+```bash
+git checkout -b <member>/<scope>
+```
+
+Examples:
+
+```bash
+git checkout -b hoang/baseline-repo
+git checkout -b khoa/database-schema
+git checkout -b quan/deadline-api
+git checkout -b thien/deadline-ui
+git checkout -b toan/dashboard-reminder
+```
+
+No mandatory `dev` branch is required.
+
+---
+
+## 6. Repository Structure
+
+```text
+unideadline-tracker/
++-- client/              # React + Tailwind + Vite frontend
++-- server/              # Node.js + Express backend
++-- docs/                # Project documents for team and AI Agents
++-- database/            # SQL schema, seed data, ERD notes
++-- scripts/             # Optional helper scripts
++-- .env.example         # Environment variable template
++-- README.md            # Project overview
++-- package.json         # Root scripts
+```
+
+Docs:
+
+| File | Purpose |
+|---|---|
+| `docs/README_SETUP.md` | Local setup and demo guide |
+| `docs/API_CONTRACT.md` | API source of truth |
+| `docs/DATABASE_SCHEMA.md` | Supabase schema/RLS source of truth |
+| `docs/CODING_GUIDELINES.md` | Code, Git, PR, security rules |
+| `docs/DEV_WORKFLOW.md` | Task workflow and AI Agent usage |
+
+---
+
+## 7. Install Dependencies
+
+From root:
 
 ```bash
 npm run install:all
 ```
 
-This command installs dependencies for both:
+If root dependencies are missing:
 
-- `client/`
-- `server/`
+```bash
+npm install
+npm run install:all
+```
 
-## 6. Environment Setup
+Do not commit `node_modules/`.
 
-Copy `.env.example` and create real environment files when needed.
+---
 
-Frontend environment file:
+## 8. Environment Setup
+
+Create:
 
 ```text
 client/.env
-```
-
-Backend environment file:
-
-```text
 server/.env
 ```
 
 Do not commit real `.env` files.
 
-### Frontend `.env` example
+Frontend `client/.env`:
 
 ```env
 VITE_API_BASE_URL=http://localhost:3001/api/v1
@@ -86,7 +182,7 @@ VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### Backend `.env` example
+Backend `server/.env`:
 
 ```env
 PORT=3001
@@ -98,135 +194,310 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
-## 7. Run Project Locally
+Security:
 
-From the root folder:
+- `SUPABASE_SERVICE_ROLE_KEY` stays server-side only.
+- Never put service role key in `client/.env`.
+
+---
+
+## 9. Supabase Setup
+
+Create Supabase project.
+
+Recommended security options:
+
+```text
+[x] Enable Data API
+[ ] Automatically expose new tables
+[x] Enable automatic RLS
+```
+
+Collect:
+
+```text
+Project URL
+Anon public key
+Service role key
+```
+
+Use them in `client/.env` and `server/.env`.
+
+---
+
+## 10. Database Setup
+
+Baseline setup should create:
+
+```text
+database/schema.sql
+database/seed.sql
+```
+
+Schema must follow:
+
+```text
+docs/DATABASE_SCHEMA.md
+```
+
+MVP tables:
+
+```text
+profiles
+courses
+deadlines
+reminders
+```
+
+Do not create in MVP:
+
+```text
+deadline_links
+file_uploads
+projects
+project_members
+group_tasks
+```
+
+Run schema SQL in Supabase SQL Editor.
+
+---
+
+## 11. Seed Data
+
+Minimum demo data:
+
+| Data | Minimum |
+|---|---:|
+| Demo account | 1 |
+| Courses | 5 |
+| Deadlines | 20 |
+| Pending reminders | 6 |
+| Deadlines with `submission_link` | 8 |
+
+Seed data should include:
+
+- Due today
+- Due this week
+- Due next week
+- Overdue
+- Submitted
+- High, Medium, Low priority
+- With and without `submission_link`
+
+Use fake demo data only.
+
+---
+
+## 12. Run Project Locally
+
+Run frontend and backend:
 
 ```bash
 npm run dev
 ```
 
-This runs both frontend and backend.
-
-Frontend URL:
-
-```text
-http://localhost:5173
-```
-
-Backend base URL:
-
-```text
-http://localhost:3001/api/v1
-```
-
-Health check:
-
-```text
-http://localhost:3001/api/v1/health
-```
-
-Expected health response:
-
-```json
-{
-  "ok": true,
-  "message": "UniDeadline Tracker API is running",
-  "service": "server",
-  "timestamp": "..."
-}
-```
-
-## 8. Run Frontend Only
+Run frontend only:
 
 ```bash
 npm run dev:client
 ```
 
-or:
-
-```bash
-cd client
-npm run dev
-```
-
-## 9. Run Backend Only
+Run backend only:
 
 ```bash
 npm run dev:server
 ```
 
-or:
+Build frontend:
 
 ```bash
-cd server
-npm run dev
+npm run build:client
 ```
 
-## 10. Repository Structure
+Lint frontend:
+
+```bash
+npm run lint --prefix client
+```
+
+---
+
+## 13. Verify Local Setup
+
+Backend health:
 
 ```text
-unideadline-tracker/
-├── client/              # React + Tailwind frontend
-├── server/              # Node.js + Express backend
-├── docs/                # Project documents for team and AI Agent
-├── database/            # SQL schema, seed data, ERD notes
-├── scripts/             # Optional helper scripts
-├── .env.example         # Environment variable template
-├── README.md            # Project overview
-└── package.json         # Root scripts
+http://localhost:3001/api/v1/health
 ```
 
-## 11. Demo Strategy
+Expected:
 
-Local demo is the required fallback.
-
-Required local demo components:
-
-- Frontend local
-- Backend local
-- Supabase cloud database/auth
-- Demo account
-- Seeded courses and deadlines
-- README setup guide
-
-Online deployment is optional if time allows.
-
-Recommended deployment:
-
-- Frontend: Vercel or Netlify
-- Backend: Render or Railway
-- Database/Auth: Supabase
-
-## 12. Common Problems
-
-### Problem: Tailwind plugin not found
-
-Install Tailwind inside `client/`:
-
-```bash
-cd client
-npm install tailwindcss @tailwindcss/vite
+```json
+{
+  "ok": true,
+  "data": {
+    "service": "server",
+    "status": "running",
+    "timestamp": "2026-06-10T08:00:00.000Z"
+  },
+  "message": "UniDeadline Tracker API is running"
+}
 ```
 
-### Problem: Backend port already in use
+Frontend:
 
-Change `PORT` in `server/.env` or stop the running process.
+```text
+http://localhost:5173
+```
 
-### Problem: Frontend cannot call backend
+Expected:
+
+- App loads without blank screen.
+- Browser console has no blocking runtime error.
+- API calls use `VITE_API_BASE_URL`.
+
+Supabase:
+
+- Auth project exists.
+- Required tables exist.
+- RLS is enabled.
+- Demo account/data exists when seed is prepared.
+
+---
+
+## 14. Local Demo Checklist
+
+```text
+[ ] Frontend runs at http://localhost:5173
+[ ] Backend runs at http://localhost:3001
+[ ] Health endpoint works
+[ ] Supabase Auth works
+[ ] Demo account can log in
+[ ] Courses are visible
+[ ] Deadlines are visible
+[ ] Weekly dashboard has useful data
+[ ] Status update works
+[ ] Search/filter works
+[ ] Reminder UI/data is visible
+[ ] Deadline submission link is visible/clickable when present
+[ ] Mobile width is usable
+```
+
+Recommended demo flow:
+
+```text
+1. Login with demo account
+2. View weekly dashboard
+3. Create course
+4. Create deadline
+5. Add or edit submission_link
+6. Update status
+7. Filter/search deadlines
+8. Show reminder/near-due alert
+9. Open submission link
+10. Show responsive layout
+```
+
+---
+
+## 15. Common Problems
+
+### `npm run install:all` fails
 
 Check:
 
-- Backend is running
-- `VITE_API_BASE_URL` is correct
-- CORS allows `http://localhost:5173`
+```bash
+node -v
+npm -v
+npm install
+npm run install:all
+```
 
-## 13. Important Rule
+### Backend port already in use
 
-Do not commit:
+Change `PORT` in `server/.env` or stop the process using port `3001`.
+
+If backend port changes, update:
+
+```text
+client/.env
+```
+
+### Frontend cannot call backend
+
+Check:
+
+- Backend is running.
+- `VITE_API_BASE_URL` is correct.
+- `CLIENT_ORIGIN` is correct.
+- Backend route matches `docs/API_CONTRACT.md`.
+
+### Supabase auth fails
+
+Check:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- Auth provider settings
+- Redirect URLs if using hosted auth flow
+
+### Database request returns no data
+
+Check:
+
+- Tables exist.
+- Seed data exists.
+- RLS policies allow current user.
+- Rows belong to logged-in user.
+
+---
+
+## 16. Baseline Owner Checklist
+
+```text
+[ ] Root package scripts work
+[ ] client/ runs with Vite
+[ ] server/ runs with Express
+[ ] .env.example has required placeholders
+[ ] client/.env and server/.env are documented but not committed
+[ ] docs/ contains required 5 project docs
+[ ] database/schema.sql is created from DATABASE_SCHEMA.md
+[ ] database/seed.sql is created for demo data
+[ ] Backend health endpoint matches API_CONTRACT.md
+[ ] main branch is ready
+[ ] Baseline tag is created
+```
+
+Suggested baseline commands:
+
+```bash
+git branch -M main
+git add .
+git commit -m "chore(baseline): initialize project source"
+git push -u origin main
+git tag baseline-2026-06-10
+git push origin baseline-2026-06-10
+```
+
+---
+
+## 17. Security Rules
+
+Never commit:
 
 - `.env`
 - API keys
 - Supabase service role key
+- Passwords
+- Personal tokens
 - Real user data
 - Private credentials
+
+Before commit:
+
+```bash
+git status
+git diff --cached
+```
+
