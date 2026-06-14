@@ -48,6 +48,7 @@ unideadline-tracker/
 +-- docs/                # Project documents for team and AI Agents
 +-- docs/agent-context/  # Short context files for AI Agents
 +-- docs/implementation/ # Scope-lock rules, task template, handoff notes
++-- docs/prompts/        # Role-based AI Agent prompt workflows
 +-- database/            # SQL schema, seed data, ERD notes
 +-- scripts/             # Optional helper scripts
 +-- .env.example         # Environment variable template
@@ -145,6 +146,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 | `docs/DATABASE_SCHEMA.md` | Supabase schema, constraints, indexes, RLS, seed requirements |
 | `docs/CODING_GUIDELINES.md` | Branch, commit, PR, code style, security, docs sync rules |
 | `docs/DEV_WORKFLOW.md` | Task workflow, role workflow, AI Agent usage, Definition of Done |
+| `docs/prompts/00-agent-router.md` | Parent prompt for role-based AI Agent workflows |
 | `docs/implementation/02_task_template.md` | Copy/paste task template for team members and AI Agents |
 | `docs/implementation/handoff/issues_backlog.md` | Out-of-scope issues found during development |
 
@@ -157,9 +159,16 @@ AGENTS.md
 docs/agent-context/00-index.md
 docs/DEV_WORKFLOW.md
 docs/CODING_GUIDELINES.md
+docs/prompts/00-agent-router.md
 ```
 
-Use this template for assigned tasks:
+Use role prompts for common Agent work:
+
+```text
+docs/prompts/00-agent-router.md
+```
+
+Use this template when a detailed task handoff is needed:
 
 ```text
 docs/implementation/02_task_template.md
@@ -167,9 +176,12 @@ docs/implementation/02_task_template.md
 
 Agent rules:
 
+- Treat the member's local repository as the current implementation state.
 - Implement only the assigned task.
 - Do not add unrelated screens, endpoints, tables, packages, or architecture changes.
 - Do not change API/schema silently.
+- Use the assignment sheet as ownership/module context, not as a replacement for source-of-truth docs.
+- If a CLI command runs longer than about 30 seconds, ask the member to run it and paste output.
 - If an issue is outside scope, report it instead of fixing it silently.
 - Never commit `.env`, Supabase service role keys, tokens, passwords, or real user data.
 

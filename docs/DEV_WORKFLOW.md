@@ -55,6 +55,7 @@ Submission Link Storage
 | `docs/DATABASE_SCHEMA.md` | Database schema and RLS source of truth |
 | `docs/CODING_GUIDELINES.md` | Code, branch, commit, PR, security rules |
 | `docs/implementation/02_task_template.md` | Copy/paste task template for devs and Agents |
+| `docs/prompts/00-agent-router.md` | Parent prompt for role-based AI Agent workflows |
 | `docs/implementation/handoff/issues_backlog.md` | Out-of-scope issues found during work |
 
 Reading order:
@@ -67,7 +68,7 @@ Reading order:
 | Backend/API | `agent-context/05-data-api-contract.md`, `API_CONTRACT.md`, `DATABASE_SCHEMA.md` |
 | Database/Supabase | `agent-context/07-security-supabase.md`, `DATABASE_SCHEMA.md`, `README_SETUP.md` |
 | Demo/QA | `README_SETUP.md`, `API_CONTRACT.md`, assignment sheet |
-| AI Agent task | `AGENTS.md`, `agent-context/08-agent-task-playbook.md`, `implementation/02_task_template.md` |
+| AI Agent task | `AGENTS.md`, `agent-context/08-agent-task-playbook.md`, `implementation/02_task_template.md`, `prompts/00-agent-router.md` |
 
 ---
 
@@ -75,7 +76,22 @@ Reading order:
 
 Each task should come from the assignment sheet.
 
-Minimum fields:
+The assignment sheet is the team ownership and module-scope tracker. It is not
+required to be a complete technical specification. It may only provide the
+member, feature group, task name, status, output description, priority, deadline,
+and notes. AI Agents infer file scope and verification from the assignment row,
+the selected role prompt, local repo structure, and source-of-truth docs.
+
+Current team sheet, when available on this PC:
+
+```text
+D:\1.UMT\1.SUBJECTS\3.JUNIOR\SEM9\SOFTWARE PROJECT MANAGEMENT\UniDeadline Tracker - Bảng Phân Công.xlsx
+```
+
+If the sheet path differs, the member should provide the local path or paste the
+relevant row.
+
+Expected assignment sheet fields:
 
 ```text
 Feature group:
@@ -86,10 +102,21 @@ Output expected:
 Priority:
 Deadline:
 Notes:
+```
+
+Optional fields for stricter task handoff:
+
+```text
 Allowed files/area:
 Acceptance criteria:
 Verification required:
+Branch:
+Task ID:
 ```
+
+If optional fields are missing, the Agent must infer them conservatively. If the
+inferred scope is ambiguous or overlaps another member's assignment, the Agent
+must stop and ask before coding.
 
 Status values:
 
@@ -263,16 +290,20 @@ Do not create deadline_links in MVP.
 
 ## 9. Agent Scope Lock
 
-Every AI Agent task must include:
+Every AI Agent task must identify:
 
 ```text
 Assigned task:
-Allowed files/area:
+Owner or member:
+Feature/module:
 Expected output:
-Acceptance criteria:
 Required docs:
 Verification required:
 ```
+
+When `Allowed files/area` or acceptance criteria are not present in the sheet,
+Agents must infer them from the role prompt, local repo structure, and source-of-
+truth docs. If inference is unclear, ask before changing files.
 
 Agent must not:
 
@@ -437,7 +468,13 @@ Update docs when:
 
 ## 15. AI Agent Prompt
 
-Use the full template in:
+For role-based Agent workflows, start with:
+
+```text
+docs/prompts/00-agent-router.md
+```
+
+Use the full task template when a more explicit handoff is needed:
 
 ```text
 docs/implementation/02_task_template.md
@@ -446,7 +483,7 @@ docs/implementation/02_task_template.md
 Minimal prompt:
 
 ```text
-Read AGENTS.md and docs/DEV_WORKFLOW.md first.
+Read AGENTS.md, docs/DEV_WORKFLOW.md, and docs/prompts/00-agent-router.md first.
 Complete only this assigned task:
 
 <paste assignment row>

@@ -13,6 +13,7 @@ Read in this order:
 3. `docs/DEV_WORKFLOW.md`
 4. The context file that matches the task type
 5. The assignment row from the team sheet
+6. `docs/prompts/00-agent-router.md` when using role-based Agent prompts
 
 ## Context Files
 
@@ -27,6 +28,20 @@ Read in this order:
 | `07-security-supabase.md` | You touch auth, RLS, keys, env, or ownership rules |
 | `08-agent-task-playbook.md` | You need the standard task execution checklist |
 | `09-known-risks-and-backlog.md` | You find issues outside current scope |
+
+## Prompt Pack
+
+| File | Use When |
+|---|---|
+| `docs/prompts/00-agent-router.md` | Parent prompt that routes Agents by work type |
+| `docs/prompts/01-common-rules.md` | Common local-state, scope, security, and CLI timeout rules |
+| `docs/prompts/02-dev-feature.md` | Assigned feature or module implementation |
+| `docs/prompts/03-bugfix.md` | Bug investigation and fix |
+| `docs/prompts/04-refactor.md` | Behavior-preserving refactor |
+| `docs/prompts/05-code-review.md` | Local branch or PR review |
+| `docs/prompts/06-qa-demo.md` | QA, UAT, and local demo verification |
+
+Prompt files define Agent workflow. They do not replace the source-of-truth docs.
 
 ## Required Source-of-Truth Files
 
