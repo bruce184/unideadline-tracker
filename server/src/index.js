@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { requireAuth } from './middleware/auth.js'
 import { supabaseAdmin } from './config/supabase.js'
 import { sendError, sendSuccess } from './utils/responses.js'
+import courseRoutes from './routes/courses.js'
 
 dotenv.config()
 
@@ -17,6 +18,7 @@ app.use(cors({
 }))
 
 app.use(express.json())
+app.use('/api/v1/courses', courseRoutes)
 
 app.get('/api/v1/health', (req, res) => {
   res.json({
