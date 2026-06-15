@@ -1,6 +1,9 @@
 ﻿import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import { requireAuth } from './middleware/auth.js'
+import { supabaseAdmin } from './config/supabase.js'
+import { sendError, sendSuccess } from './utils/responses.js'
 
 dotenv.config()
 
@@ -25,6 +28,25 @@ app.get('/api/v1/health', (req, res) => {
     },
     message: 'UniDeadline Tracker API is running',
   })
+})
+
+app.get('/api/v1/me', requireAuth, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('profiles')
+    .select('id, email, display_name, created_at, updated_at')
+    .eq('id', req.user.id)
+    .single()
+
+  if (error) {
+    return sendError(
+      res,
+      404,
+      'NOT_FOUND',
+      'Current user profile was not found'
+    )
+  }
+
+  return sendSuccess(res, data, 'Current user loaded')
 })
 
 app.get('/api/v1', (req, res) => {
