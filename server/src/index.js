@@ -5,7 +5,9 @@ import { requireAuth } from './middleware/auth.js'
 import { supabaseAdmin } from './config/supabase.js'
 import { sendError, sendSuccess } from './utils/responses.js'
 import courseRoutes from './routes/courses.js'
-
+import deadlineRoutes from './routes/deadlines.js'
+import dashboardRoutes from './routes/dashboard.js'
+import reminderRoutes from './routes/reminders.js'
 dotenv.config()
 
 const app = express()
@@ -19,6 +21,10 @@ app.use(cors({
 
 app.use(express.json())
 app.use('/api/v1/courses', courseRoutes)
+app.use('/api/v1/deadlines', deadlineRoutes)
+app.use('/api/v1/dashboard', dashboardRoutes)
+app.use('/api/v1/reminders', reminderRoutes)
+app.use('/api/v1', reminderRoutes)
 
 app.get('/api/v1/health', (req, res) => {
   res.json({
