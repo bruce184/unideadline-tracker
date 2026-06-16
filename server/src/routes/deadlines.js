@@ -120,6 +120,24 @@ function validateDeadlineInput(body, partial = false) {
   return details
 }
 
+function buildDeadlineValidationError(details) {
+  const hasInvalidSubmissionLink = details.some((detail) => (
+    detail.field === 'submission_link'
+  ))
+
+  if (hasInvalidSubmissionLink) {
+    return {
+      code: 'INVALID_URL',
+      message: 'Submission link must be a valid HTTP/HTTPS URL',
+    }
+  }
+
+  return {
+    code: 'VALIDATION_ERROR',
+    message: 'Invalid deadline input',
+  }
+}
+
 async function ensureOwnedCourse(courseId, userId) {
   const supabaseAdmin = getSupabaseAdmin()
 
@@ -261,7 +279,14 @@ router.post('/', requireAuth, async (req, res) => {
   const details = validateDeadlineInput(req.body)
 
   if (details.length > 0) {
-    return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid deadline input', details)
+    const validationError = buildDeadlineValidationError(details)
+    return sendError(
+      res,
+      400,
+      validationError.code,
+      validationError.message,
+      details
+    )
   }
 
   const courseIsOwned = await ensureOwnedCourse(req.body.course_id, req.user.id)
@@ -369,7 +394,14 @@ router.patch('/:id', requireAuth, async (req, res) => {
   const details = validateDeadlineInput(req.body, true)
 
   if (details.length > 0) {
-    return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid deadline input', details)
+    const validationError = buildDeadlineValidationError(details)
+    return sendError(
+      res,
+      400,
+      validationError.code,
+      validationError.message,
+      details
+    )
   }
 
   if (req.body.course_id !== undefined) {
