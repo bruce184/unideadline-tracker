@@ -8,21 +8,23 @@ const router = express.Router()
 
 const ALLOWED_CHANNELS = ['in_app', 'email']
 const ALLOWED_SENT_STATUS = ['pending', 'sent', 'failed']
+const ALLOWED_OFFSETS = [7, 3, 1, 0]
 const DEFAULT_OFFSETS = [7, 3, 1]
+const DAY_IN_MS = 24 * 60 * 60 * 1000
 
 function normalizeOffsets(value) {
   if (value === undefined) {
     return DEFAULT_OFFSETS
   }
 
-  if (!Array.isArray(value)) {
+  if (!Array.isArray(value) || value.length === 0) {
     return null
   }
 
   const offsets = value.map((item) => Number(item))
 
   const hasInvalidOffset = offsets.some((item) => (
-    !Number.isInteger(item) || item < 0 || item > 365
+    !Number.isInteger(item) || !ALLOWED_OFFSETS.includes(item)
   ))
 
   if (hasInvalidOffset) {
@@ -47,6 +49,18 @@ async function getOwnedDeadline(deadlineId, userId) {
   return data
 }
 
+function buildReminderRows(deadline, offsets, channel) {
+  const dueDateMs = new Date(deadline.due_date).getTime()
+
+  return offsets.map((offsetDays) => ({
+    deadline_id: deadline.id,
+    reminder_time: new Date(dueDateMs - offsetDays * DAY_IN_MS).toISOString(),
+    offset_days: offsetDays,
+    channel,
+    sent_status: 'pending',
+  }))
+}
+
 router.get('/', requireAuth, async (req, res) => {
   const pagination = parsePagination(req.query)
 
@@ -63,19 +77,16 @@ router.get('/', requireAuth, async (req, res) => {
     .select(`
       id,
       deadline_id,
-      offsets,
+      reminder_time,
+      offset_days,
       channel,
-      enabled,
       sent_status,
       created_at,
-      updated_at,
       deadline:deadlines!inner (
         id,
         user_id,
         title,
-        due_date,
-        status,
-        priority
+        due_date
       )
     `, { count: 'exact' })
     .eq('deadline.user_id', req.user.id)
@@ -85,15 +96,15 @@ router.get('/', requireAuth, async (req, res) => {
   }
 
   if (req.query.from) {
-    query = query.gte('created_at', req.query.from)
+    query = query.gte('reminder_time', req.query.from)
   }
 
   if (req.query.to) {
-    query = query.lte('created_at', req.query.to)
+    query = query.lte('reminder_time', req.query.to)
   }
 
   const { data, error, count } = await query
-    .order('created_at', { ascending: false })
+    .order('reminder_time', { ascending: true })
     .range(pagination.from, pagination.to)
 
   if (error) {
@@ -124,54 +135,70 @@ router.patch('/deadlines/:id/reminder', requireAuth, async (req, res) => {
     return sendError(res, 400, 'VALIDATION_ERROR', 'Submitted deadlines cannot create active reminders')
   }
 
-  const offsets = normalizeOffsets(req.body.reminder_offsets)
-
-  if (req.body.enabled && !offsets) {
-    return sendError(res, 400, 'VALIDATION_ERROR', 'reminder_offsets must be an array of valid day offsets')
-  }
-
   const channel = req.body.channel || 'in_app'
 
   if (!ALLOWED_CHANNELS.includes(channel)) {
     return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid reminder channel')
   }
 
-  const payload = {
-    deadline_id: deadline.id,
-    offsets: req.body.enabled ? offsets : DEFAULT_OFFSETS,
-    channel,
-    enabled: req.body.enabled,
-    sent_status: 'pending',
+  if (!req.body.enabled) {
+    const { error } = await supabaseAdmin
+      .from('reminders')
+      .delete()
+      .eq('deadline_id', deadline.id)
+      .eq('sent_status', 'pending')
+
+    if (error) {
+      return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be disabled')
+    }
+
+    return sendSuccess(
+      res,
+      {
+        deadline_id: deadline.id,
+        enabled: false,
+        reminder_offsets: [],
+      },
+      'Reminder updated'
+    )
   }
 
-  const { data: existing } = await supabaseAdmin
+  const offsets = normalizeOffsets(req.body.reminder_offsets)
+
+  if (!offsets) {
+    return sendError(
+      res,
+      400,
+      'VALIDATION_ERROR',
+      'reminder_offsets must be a non-empty array of valid MVP offsets'
+    )
+  }
+
+  const reminderRows = buildReminderRows(deadline, offsets, channel)
+
+  const { error: deleteError } = await supabaseAdmin
     .from('reminders')
-    .select('id')
+    .delete()
     .eq('deadline_id', deadline.id)
-    .maybeSingle()
+    .eq('channel', channel)
+    .eq('sent_status', 'pending')
 
-  let result
-
-  if (existing) {
-    result = await supabaseAdmin
-      .from('reminders')
-      .update(payload)
-      .eq('id', existing.id)
-      .select('id, deadline_id, offsets, channel, enabled, sent_status, created_at, updated_at')
-      .single()
-  } else {
-    result = await supabaseAdmin
-      .from('reminders')
-      .insert(payload)
-      .select('id, deadline_id, offsets, channel, enabled, sent_status, created_at, updated_at')
-      .single()
-  }
-
-  if (result.error) {
+  if (deleteError) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be saved')
   }
 
-  return sendSuccess(res, result.data, 'Reminder updated')
+  const { data, error } = await supabaseAdmin
+    .from('reminders')
+    .upsert(reminderRows, {
+      onConflict: 'deadline_id,offset_days,channel',
+    })
+    .select('id, deadline_id, reminder_time, offset_days, channel, sent_status, created_at')
+
+  if (error) {
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be saved')
+  }
+
+  return sendSuccess(res, data || [], 'Reminder updated')
 })
 
 export default router

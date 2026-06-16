@@ -293,12 +293,11 @@ router.get('/:id', requireAuth, async (req, res) => {
       ),
       reminders (
         id,
-        offsets,
+        reminder_time,
+        offset_days,
         channel,
-        enabled,
         sent_status,
-        created_at,
-        updated_at
+        created_at
       )
     `)
     .eq('id', req.params.id)
@@ -394,6 +393,18 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
   if (error) {
     return sendError(res, 404, 'NOT_FOUND', 'Deadline was not found')
+  }
+
+  if (updates.status === 'Submitted') {
+    const { error: reminderError } = await supabaseAdmin
+      .from('reminders')
+      .delete()
+      .eq('deadline_id', req.params.id)
+      .eq('sent_status', 'pending')
+
+    if (reminderError) {
+      return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not remove pending reminders')
+    }
   }
 
   return sendSuccess(res, data, 'Deadline updated')
