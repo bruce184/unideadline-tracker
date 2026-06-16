@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabaseAdmin } from '../config/supabase.js'
+import { getSupabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 
@@ -74,6 +74,7 @@ router.get('/weekly', requireAuth, async (req, res) => {
 
   weekStart = startOfWeek(weekStart)
   const weekEnd = endOfWeek(weekStart)
+  const supabaseAdmin = getSupabaseAdmin()
 
   const { data, error } = await supabaseAdmin
     .from('deadlines')

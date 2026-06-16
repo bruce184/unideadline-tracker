@@ -2,7 +2,7 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { requireAuth } from './middleware/auth.js'
-import { supabaseAdmin } from './config/supabase.js'
+import { getSupabaseAdmin } from './config/supabase.js'
 import { sendError, sendSuccess } from './utils/responses.js'
 import courseRoutes from './routes/courses.js'
 import deadlineRoutes from './routes/deadlines.js'
@@ -39,6 +39,8 @@ app.get('/api/v1/health', (req, res) => {
 })
 
 app.get('/api/v1/me', requireAuth, async (req, res) => {
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('profiles')
     .select('id, email, display_name, created_at, updated_at')
@@ -62,6 +64,11 @@ app.get('/api/v1', (req, res) => {
     ok: true,
     message: 'Welcome to UniDeadline Tracker API',
   })
+})
+
+app.use((err, req, res, _next) => {
+  console.error(err)
+  return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Unexpected server error')
 })
 
 app.listen(PORT, () => {

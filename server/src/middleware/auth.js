@@ -1,4 +1,4 @@
-import { supabase } from '../config/supabase.js'
+import { getSupabase } from '../config/supabase.js'
 import { sendError } from '../utils/responses.js'
 
 export async function requireAuth(req, res, next) {
@@ -21,6 +21,19 @@ export async function requireAuth(req, res, next) {
       401,
       'UNAUTHORIZED',
       'Missing or invalid authorization token'
+    )
+  }
+
+  let supabase
+
+  try {
+    supabase = getSupabase()
+  } catch {
+    return sendError(
+      res,
+      500,
+      'INTERNAL_SERVER_ERROR',
+      'Supabase is not configured'
     )
   }
 

@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabaseAdmin } from '../config/supabase.js'
+import { getSupabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import { buildPaginationMeta, parsePagination } from '../utils/query.js'
@@ -36,6 +36,8 @@ function normalizeOffsets(value) {
 }
 
 async function getOwnedDeadline(deadlineId, userId) {
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('deadlines')
     .select('id, user_id, title, due_date, status')
@@ -72,6 +74,8 @@ router.get('/', requireAuth, async (req, res) => {
   if (req.query.sent_status && !ALLOWED_SENT_STATUS.includes(req.query.sent_status)) {
     return sendError(res, 400, 'INVALID_QUERY', 'Invalid sent_status')
   }
+
+  const supabaseAdmin = getSupabaseAdmin()
 
   let query = supabaseAdmin
     .from('reminders')
@@ -141,6 +145,8 @@ deadlineReminderRoutes.patch('/deadlines/:id/reminder', requireAuth, async (req,
   if (!ALLOWED_CHANNELS.includes(channel)) {
     return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid reminder channel')
   }
+
+  const supabaseAdmin = getSupabaseAdmin()
 
   if (!req.body.enabled) {
     const { error } = await supabaseAdmin

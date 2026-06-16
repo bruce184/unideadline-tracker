@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabaseAdmin } from '../config/supabase.js'
+import { getSupabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import {
@@ -119,6 +119,8 @@ function validateDeadlineInput(body, partial = false) {
 }
 
 async function ensureOwnedCourse(courseId, userId) {
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('courses')
     .select('id')
@@ -180,6 +182,8 @@ router.get('/', requireAuth, async (req, res) => {
   if (req.query.from && req.query.to && new Date(req.query.from) > new Date(req.query.to)) {
     return sendError(res, 400, 'INVALID_QUERY', 'Invalid date range')
   }
+
+  const supabaseAdmin = getSupabaseAdmin()
 
   let query = supabaseAdmin
     .from('deadlines')
@@ -246,6 +250,8 @@ router.post('/', requireAuth, async (req, res) => {
     submission_link: normalizeOptionalText(req.body.submission_link),
   }
 
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('deadlines')
     .insert(payload)
@@ -272,6 +278,8 @@ router.post('/', requireAuth, async (req, res) => {
 })
 
 router.get('/:id', requireAuth, async (req, res) => {
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('deadlines')
     .select(`
@@ -371,6 +379,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
     updates.submission_link = normalizeOptionalText(req.body.submission_link)
   }
 
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('deadlines')
     .update(updates)
@@ -411,6 +421,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
 })
 
 router.delete('/:id', requireAuth, async (req, res) => {
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('deadlines')
     .delete()

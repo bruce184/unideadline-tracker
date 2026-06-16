@@ -1,5 +1,5 @@
 import express from 'express'
-import { supabaseAdmin } from '../config/supabase.js'
+import { getSupabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import {
@@ -80,6 +80,8 @@ router.get('/', requireAuth, async (req, res) => {
     return sendError(res, 400, 'INVALID_QUERY', 'sort_order must be asc or desc')
   }
 
+  const supabaseAdmin = getSupabaseAdmin()
+
   let query = supabaseAdmin
     .from('courses')
     .select('id, user_id, course_name, course_code, semester, created_at, updated_at', {
@@ -128,6 +130,8 @@ router.post('/', requireAuth, async (req, res) => {
     semester: normalizeOptionalText(req.body.semester),
   }
 
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('courses')
     .insert(payload)
@@ -169,6 +173,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
     updates.semester = normalizeOptionalText(req.body.semester)
   }
 
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { data, error } = await supabaseAdmin
     .from('courses')
     .update(updates)
@@ -185,6 +191,8 @@ router.patch('/:id', requireAuth, async (req, res) => {
 })
 
 router.delete('/:id', requireAuth, async (req, res) => {
+  const supabaseAdmin = getSupabaseAdmin()
+
   const { count, error: countError } = await supabaseAdmin
     .from('deadlines')
     .select('id', { count: 'exact', head: true })
