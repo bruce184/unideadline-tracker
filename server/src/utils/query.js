@@ -39,6 +39,10 @@ export function parseSortOrder(value, defaultValue = 'asc') {
   return sortOrder
 }
 
+export function isValidIsoDateTime(value) {
+  return value === undefined || !Number.isNaN(Date.parse(String(value)))
+}
+
 export function sanitizeSearchTerm(value) {
   const trimmed = String(value || '').trim()
 

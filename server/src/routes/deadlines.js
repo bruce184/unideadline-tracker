@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import {
   buildPaginationMeta,
+  isValidIsoDateTime,
   parsePagination,
   parseSortOrder,
   sanitizeSearchTerm,
@@ -14,6 +15,7 @@ const router = express.Router()
 const ALLOWED_STATUS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
 const ALLOWED_PRIORITY = ['High', 'Medium', 'Low']
 const ALLOWED_SORT_FIELDS = ['due_date', 'created_at', 'priority', 'status']
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 function normalizeOptionalText(value) {
   if (value === undefined || value === null) {
@@ -131,6 +133,38 @@ async function ensureOwnedCourse(courseId, userId) {
   return !error && data
 }
 
+function validateDeadlineQuery(query) {
+  if (query.course_id && !UUID_PATTERN.test(String(query.course_id))) {
+    return 'course_id must be a valid UUID'
+  }
+
+  if (query.status && !ALLOWED_STATUS.includes(query.status)) {
+    return 'status is invalid'
+  }
+
+  if (query.priority && !ALLOWED_PRIORITY.includes(query.priority)) {
+    return 'priority is invalid'
+  }
+
+  if (!isValidIsoDateTime(query.from)) {
+    return 'from must be a valid ISO 8601 datetime'
+  }
+
+  if (!isValidIsoDateTime(query.to)) {
+    return 'to must be a valid ISO 8601 datetime'
+  }
+
+  if (query.from && query.to && new Date(query.from) > new Date(query.to)) {
+    return 'Invalid date range'
+  }
+
+  if (query.sort_by && !ALLOWED_SORT_FIELDS.includes(query.sort_by)) {
+    return 'sort_by is invalid'
+  }
+
+  return null
+}
+
 function applyDeadlineFilters(query, reqQuery) {
   if (reqQuery.course_id) {
     query = query.eq('course_id', reqQuery.course_id)
@@ -164,6 +198,7 @@ function applyDeadlineFilters(query, reqQuery) {
 
 router.get('/', requireAuth, async (req, res) => {
   const pagination = parsePagination(req.query)
+  const queryError = validateDeadlineQuery(req.query)
   const sortOrder = parseSortOrder(req.query.sort_order)
   const sortBy = req.query.sort_by || 'due_date'
 
@@ -171,16 +206,12 @@ router.get('/', requireAuth, async (req, res) => {
     return sendError(res, 400, 'INVALID_QUERY', pagination.error)
   }
 
+  if (queryError) {
+    return sendError(res, 400, 'INVALID_QUERY', queryError)
+  }
+
   if (!sortOrder) {
     return sendError(res, 400, 'INVALID_QUERY', 'sort_order must be asc or desc')
-  }
-
-  if (!ALLOWED_SORT_FIELDS.includes(sortBy)) {
-    return sendError(res, 400, 'INVALID_QUERY', 'sort_by is invalid')
-  }
-
-  if (req.query.from && req.query.to && new Date(req.query.from) > new Date(req.query.to)) {
-    return sendError(res, 400, 'INVALID_QUERY', 'Invalid date range')
   }
 
   const supabaseAdmin = getSupabaseAdmin()
