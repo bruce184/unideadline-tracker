@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 
 const router = express.Router()
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 function startOfWeek(date) {
   const result = new Date(date)
@@ -26,6 +27,24 @@ function endOfWeek(date) {
 
 function formatDateOnly(date) {
   return date.toISOString().slice(0, 10)
+}
+
+function parseWeekStart(value) {
+  if (value === undefined) {
+    return startOfWeek(new Date())
+  }
+
+  if (!DATE_ONLY_PATTERN.test(String(value))) {
+    return null
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`)
+
+  if (Number.isNaN(date.getTime()) || formatDateOnly(date) !== value) {
+    return null
+  }
+
+  return date
 }
 
 function calculateSummary(deadlines, now) {
@@ -64,12 +83,10 @@ function calculateSummary(deadlines, now) {
 }
 
 router.get('/weekly', requireAuth, async (req, res) => {
-  let weekStart = req.query.week_start
-    ? new Date(req.query.week_start)
-    : startOfWeek(new Date())
+  let weekStart = parseWeekStart(req.query.week_start)
 
-  if (Number.isNaN(weekStart.getTime())) {
-    return sendError(res, 400, 'INVALID_QUERY', 'Invalid week_start')
+  if (!weekStart) {
+    return sendError(res, 400, 'INVALID_QUERY', 'week_start must use YYYY-MM-DD format')
   }
 
   weekStart = startOfWeek(weekStart)
