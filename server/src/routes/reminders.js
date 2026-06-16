@@ -2,7 +2,7 @@ import express from 'express'
 import { getSupabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
-import { buildPaginationMeta, parsePagination } from '../utils/query.js'
+import { buildPaginationMeta, isValidIsoDateTime, parsePagination } from '../utils/query.js'
 
 const router = express.Router()
 const deadlineReminderRoutes = express.Router()
@@ -64,15 +64,36 @@ function buildReminderRows(deadline, offsets, channel) {
   }))
 }
 
+function validateReminderQuery(query) {
+  if (query.sent_status && !ALLOWED_SENT_STATUS.includes(query.sent_status)) {
+    return 'Invalid sent_status'
+  }
+
+  if (!isValidIsoDateTime(query.from)) {
+    return 'from must be a valid ISO 8601 datetime'
+  }
+
+  if (!isValidIsoDateTime(query.to)) {
+    return 'to must be a valid ISO 8601 datetime'
+  }
+
+  if (query.from && query.to && new Date(query.from) > new Date(query.to)) {
+    return 'Invalid date range'
+  }
+
+  return null
+}
+
 router.get('/', requireAuth, async (req, res) => {
   const pagination = parsePagination(req.query)
+  const queryError = validateReminderQuery(req.query)
 
   if (pagination.error) {
     return sendError(res, 400, 'INVALID_QUERY', pagination.error)
   }
 
-  if (req.query.sent_status && !ALLOWED_SENT_STATUS.includes(req.query.sent_status)) {
-    return sendError(res, 400, 'INVALID_QUERY', 'Invalid sent_status')
+  if (queryError) {
+    return sendError(res, 400, 'INVALID_QUERY', queryError)
   }
 
   const supabaseAdmin = getSupabaseAdmin()
