@@ -5,6 +5,7 @@ import { sendError, sendSuccess } from '../utils/responses.js'
 import { buildPaginationMeta, parsePagination } from '../utils/query.js'
 
 const router = express.Router()
+const deadlineReminderRoutes = express.Router()
 
 const ALLOWED_CHANNELS = ['in_app', 'email']
 const ALLOWED_SENT_STATUS = ['pending', 'sent', 'failed']
@@ -120,7 +121,7 @@ router.get('/', requireAuth, async (req, res) => {
   )
 })
 
-router.patch('/deadlines/:id/reminder', requireAuth, async (req, res) => {
+deadlineReminderRoutes.patch('/deadlines/:id/reminder', requireAuth, async (req, res) => {
   if (typeof req.body.enabled !== 'boolean') {
     return sendError(res, 400, 'VALIDATION_ERROR', 'enabled must be a boolean')
   }
@@ -201,4 +202,5 @@ router.patch('/deadlines/:id/reminder', requireAuth, async (req, res) => {
   return sendSuccess(res, data || [], 'Reminder updated')
 })
 
+export { deadlineReminderRoutes }
 export default router
