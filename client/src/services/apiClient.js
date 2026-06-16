@@ -108,6 +108,21 @@ export async function apiRequest(path, options = {}) {
   } = options
 
   const accessToken = auth ? await resolveAccessToken(token) : null
+
+  if (auth && !accessToken) {
+    const apiError = new ApiError({
+      status: 401,
+      code: 'UNAUTHORIZED',
+      message: 'Please sign in to continue',
+    })
+
+    if (apiClientConfig.onUnauthorized) {
+      apiClientConfig.onUnauthorized(apiError)
+    }
+
+    throw apiError
+  }
+
   const requestHeaders = {
     Accept: 'application/json',
     ...headers,

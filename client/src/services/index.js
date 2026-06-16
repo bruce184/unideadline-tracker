@@ -23,3 +23,11 @@ export {
 export { getWeeklyDashboard } from './dashboardService'
 export { getHealth } from './healthService'
 export { listReminders } from './reminderService'
+export {
+  clearStoredSession,
+  getStoredAccessToken,
+  getStoredSession,
+  hasSupabaseAuthConfig,
+  signInWithPassword,
+  signOut,
+} from './supabaseAuthService'
