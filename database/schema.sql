@@ -43,10 +43,11 @@ create table if not exists public.deadlines (
 create table if not exists public.reminders (
   id uuid primary key default gen_random_uuid(),
   deadline_id uuid not null references public.deadlines(id) on delete cascade,
-  offsets integer[] not null default array[7, 3, 1],
+  reminder_time timestamptz not null,
+  offset_days integer not null
+    check (offset_days in (0, 1, 3, 7)),
   channel text not null default 'in_app'
     check (channel in ('in_app', 'email')),
-  enabled boolean not null default true,
   sent_status text not null default 'pending'
     check (sent_status in ('pending', 'sent', 'failed')),
   created_at timestamptz not null default now(),
@@ -84,8 +85,11 @@ on public.deadlines(user_id, priority);
 create index if not exists idx_reminders_deadline_id
 on public.reminders(deadline_id);
 
-create index if not exists idx_reminders_enabled_status
-on public.reminders(enabled, sent_status);
+create unique index if not exists uq_reminders_deadline_offset_channel
+on public.reminders(deadline_id, offset_days, channel);
+
+create index if not exists idx_reminders_time_status
+on public.reminders(reminder_time, sent_status);
 
 create or replace function public.set_updated_at()
 returns trigger as $$

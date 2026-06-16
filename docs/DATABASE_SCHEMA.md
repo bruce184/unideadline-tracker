@@ -219,9 +219,9 @@ Rules:
 |---|---|---:|---|---|
 | `id` | uuid | Yes | `gen_random_uuid()` | Primary key |
 | `deadline_id` | uuid | Yes | None | Related deadline |
-| `offsets` | integer[] | Yes | `array[7, 3, 1]` | Reminder offsets in days before due date |
+| `reminder_time` | timestamptz | Yes | None | Exact reminder trigger time |
+| `offset_days` | integer | Yes | None | Offset used to calculate `reminder_time` |
 | `channel` | text | Yes | `in_app` | Check constraint |
-| `enabled` | boolean | Yes | `true` | Whether reminder alerts are active |
 | `sent_status` | text | Yes | `pending` | Check constraint |
 | `created_at` | timestamptz | Yes | `now()` | Created timestamp |
 | `updated_at` | timestamptz | Yes | `now()` | Updated timestamp |
@@ -247,10 +247,11 @@ failed
 create table if not exists public.reminders (
   id uuid primary key default gen_random_uuid(),
   deadline_id uuid not null references public.deadlines(id) on delete cascade,
-  offsets integer[] not null default array[7, 3, 1],
+  reminder_time timestamptz not null,
+  offset_days integer not null
+    check (offset_days in (0, 1, 3, 7)),
   channel text not null default 'in_app'
     check (channel in ('in_app', 'email')),
-  enabled boolean not null default true,
   sent_status text not null default 'pending'
     check (sent_status in ('pending', 'sent', 'failed')),
   created_at timestamptz not null default now(),
@@ -260,11 +261,13 @@ create table if not exists public.reminders (
 
 Rules:
 
-- Reminder rows store the reminder configuration for a deadline.
-- Default offsets are `7`, `3`, and `1` days before due date.
+- Each reminder row stores one scheduled reminder occurrence.
+- Backend creates reminder rows from the `reminder_offsets` request field.
+- `reminder_time` is calculated from `deadlines.due_date - offset_days`.
+- MVP offsets are `7`, `3`, `1`, and `0` days before due date.
 - `channel` defaults to `in_app`.
 - Submitted deadlines should not appear in reminder alerts.
-- If `enabled` is `false`, the deadline should not appear in reminder alerts.
+- Disabling reminders removes pending reminder rows for that deadline.
 
 ---
 
@@ -316,8 +319,11 @@ on public.deadlines(user_id, priority);
 create index if not exists idx_reminders_deadline_id
 on public.reminders(deadline_id);
 
-create index if not exists idx_reminders_enabled_status
-on public.reminders(enabled, sent_status);
+create unique index if not exists uq_reminders_deadline_offset_channel
+on public.reminders(deadline_id, offset_days, channel);
+
+create index if not exists idx_reminders_time_status
+on public.reminders(reminder_time, sent_status);
 ```
 
 ---
@@ -510,8 +516,9 @@ Minimum demo data:
 | Demo account | 1 |
 | Courses | 5 |
 | Deadlines | 20 |
-| Enabled reminder configurations | 5 |
-| Disabled reminder configurations | 2 |
+| Deadlines with reminder rows | 5 |
+| Reminder rows | 15 |
+| Deadlines without pending reminders | 2 |
 | Deadlines with `submission_link` | 8 |
 
 Deadline coverage:
@@ -523,7 +530,7 @@ Deadline coverage:
 - Submitted overdue cases
 - Submitted
 - High, Medium, Low priorities
-- Enabled and disabled reminders
+- Deadlines with and without pending reminders
 - With and without `submission_link`
 
 Do not use real private student data.

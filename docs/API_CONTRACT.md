@@ -206,6 +206,7 @@ Rules:
   "id": "reminder-uuid",
   "deadline_id": "deadline-uuid",
   "reminder_time": "2026-06-19T23:59:00+07:00",
+  "offset_days": 1,
   "channel": "in_app",
   "sent_status": "pending",
   "deadline": {

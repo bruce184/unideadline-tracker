@@ -83,18 +83,36 @@ begin
       description = excluded.description,
       submission_link = excluded.submission_link;
 
-  insert into public.reminders (id, deadline_id, offsets, channel, enabled, sent_status)
-  values
-    ('bbbbbbbb-0001-4000-8000-000000000001', 'aaaaaaaa-0001-4000-8000-000000000001', array[7, 3, 1], 'in_app', true, 'pending'),
-    ('bbbbbbbb-0002-4000-8000-000000000002', 'aaaaaaaa-0003-4000-8000-000000000003', array[7, 3, 1], 'in_app', true, 'pending'),
-    ('bbbbbbbb-0003-4000-8000-000000000003', 'aaaaaaaa-0007-4000-8000-000000000007', array[7, 3, 1], 'in_app', true, 'pending'),
-    ('bbbbbbbb-0004-4000-8000-000000000004', 'aaaaaaaa-0009-4000-8000-000000000009', array[7, 3, 1], 'in_app', true, 'pending'),
-    ('bbbbbbbb-0005-4000-8000-000000000005', 'aaaaaaaa-0017-4000-8000-000000000017', array[7, 3, 1], 'in_app', true, 'pending'),
-    ('bbbbbbbb-0006-4000-8000-000000000006', 'aaaaaaaa-0014-4000-8000-000000000014', array[7, 3, 1], 'in_app', false, 'pending'),
-    ('bbbbbbbb-0007-4000-8000-000000000007', 'aaaaaaaa-0019-4000-8000-000000000019', array[7, 3, 1], 'in_app', false, 'pending')
+  insert into public.reminders (id, deadline_id, reminder_time, offset_days, channel, sent_status)
+  select
+    reminder_id,
+    deadline_id,
+    d.due_date - make_interval(days => offset_days),
+    offset_days,
+    'in_app',
+    'pending'
+  from (
+    values
+      ('bbbbbbbb-0001-4000-8000-000000000001'::uuid, 'aaaaaaaa-0001-4000-8000-000000000001'::uuid, 7),
+      ('bbbbbbbb-0002-4000-8000-000000000002'::uuid, 'aaaaaaaa-0001-4000-8000-000000000001'::uuid, 3),
+      ('bbbbbbbb-0003-4000-8000-000000000003'::uuid, 'aaaaaaaa-0001-4000-8000-000000000001'::uuid, 1),
+      ('bbbbbbbb-0004-4000-8000-000000000004'::uuid, 'aaaaaaaa-0003-4000-8000-000000000003'::uuid, 7),
+      ('bbbbbbbb-0005-4000-8000-000000000005'::uuid, 'aaaaaaaa-0003-4000-8000-000000000003'::uuid, 3),
+      ('bbbbbbbb-0006-4000-8000-000000000006'::uuid, 'aaaaaaaa-0003-4000-8000-000000000003'::uuid, 1),
+      ('bbbbbbbb-0007-4000-8000-000000000007'::uuid, 'aaaaaaaa-0007-4000-8000-000000000007'::uuid, 7),
+      ('bbbbbbbb-0008-4000-8000-000000000008'::uuid, 'aaaaaaaa-0007-4000-8000-000000000007'::uuid, 3),
+      ('bbbbbbbb-0009-4000-8000-000000000009'::uuid, 'aaaaaaaa-0007-4000-8000-000000000007'::uuid, 1),
+      ('bbbbbbbb-0010-4000-8000-000000000010'::uuid, 'aaaaaaaa-0009-4000-8000-000000000009'::uuid, 7),
+      ('bbbbbbbb-0011-4000-8000-000000000011'::uuid, 'aaaaaaaa-0009-4000-8000-000000000009'::uuid, 3),
+      ('bbbbbbbb-0012-4000-8000-000000000012'::uuid, 'aaaaaaaa-0009-4000-8000-000000000009'::uuid, 1),
+      ('bbbbbbbb-0013-4000-8000-000000000013'::uuid, 'aaaaaaaa-0017-4000-8000-000000000017'::uuid, 7),
+      ('bbbbbbbb-0014-4000-8000-000000000014'::uuid, 'aaaaaaaa-0017-4000-8000-000000000017'::uuid, 3),
+      ('bbbbbbbb-0015-4000-8000-000000000015'::uuid, 'aaaaaaaa-0017-4000-8000-000000000017'::uuid, 1)
+  ) as reminder_seed(reminder_id, deadline_id, offset_days)
+  join public.deadlines d on d.id = reminder_seed.deadline_id
   on conflict (id) do update
-  set offsets = excluded.offsets,
+  set reminder_time = excluded.reminder_time,
+      offset_days = excluded.offset_days,
       channel = excluded.channel,
-      enabled = excluded.enabled,
       sent_status = excluded.sent_status;
 end $$;
