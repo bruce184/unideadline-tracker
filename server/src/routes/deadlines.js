@@ -2,11 +2,18 @@ import express from 'express'
 import { supabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
+import {
+  buildPaginationMeta,
+  parsePagination,
+  parseSortOrder,
+  sanitizeSearchTerm,
+} from '../utils/query.js'
 
 const router = express.Router()
 
 const ALLOWED_STATUS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
 const ALLOWED_PRIORITY = ['High', 'Medium', 'Low']
+const ALLOWED_SORT_FIELDS = ['due_date', 'created_at', 'priority', 'status']
 
 function normalizeOptionalText(value) {
   if (value === undefined || value === null) {
@@ -144,7 +151,7 @@ function applyDeadlineFilters(query, reqQuery) {
   }
 
   if (reqQuery.q) {
-    const q = String(reqQuery.q).trim()
+    const q = sanitizeSearchTerm(reqQuery.q)
     if (q) {
       query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`)
     }
@@ -154,6 +161,22 @@ function applyDeadlineFilters(query, reqQuery) {
 }
 
 router.get('/', requireAuth, async (req, res) => {
+  const pagination = parsePagination(req.query)
+  const sortOrder = parseSortOrder(req.query.sort_order)
+  const sortBy = req.query.sort_by || 'due_date'
+
+  if (pagination.error) {
+    return sendError(res, 400, 'INVALID_QUERY', pagination.error)
+  }
+
+  if (!sortOrder) {
+    return sendError(res, 400, 'INVALID_QUERY', 'sort_order must be asc or desc')
+  }
+
+  if (!ALLOWED_SORT_FIELDS.includes(sortBy)) {
+    return sendError(res, 400, 'INVALID_QUERY', 'sort_by is invalid')
+  }
+
   if (req.query.from && req.query.to && new Date(req.query.from) > new Date(req.query.to)) {
     return sendError(res, 400, 'INVALID_QUERY', 'Invalid date range')
   }
@@ -177,18 +200,26 @@ router.get('/', requireAuth, async (req, res) => {
         course_name,
         course_code
       )
-    `)
+    `, { count: 'exact' })
     .eq('user_id', req.user.id)
 
   query = applyDeadlineFilters(query, req.query)
 
-  const { data, error } = await query.order('due_date', { ascending: true })
+  const { data, error, count } = await query
+    .order(sortBy, { ascending: sortOrder === 'asc' })
+    .range(pagination.from, pagination.to)
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load deadlines')
   }
 
-  return sendSuccess(res, data, 'Deadlines loaded')
+  return sendSuccess(
+    res,
+    data || [],
+    'Deadlines loaded',
+    200,
+    buildPaginationMeta(pagination.page, pagination.limit, count || 0)
+  )
 })
 
 router.post('/', requireAuth, async (req, res) => {

@@ -2,6 +2,7 @@ import express from 'express'
 import { supabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
+import { buildPaginationMeta, parsePagination } from '../utils/query.js'
 
 const router = express.Router()
 
@@ -47,6 +48,12 @@ async function getOwnedDeadline(deadlineId, userId) {
 }
 
 router.get('/', requireAuth, async (req, res) => {
+  const pagination = parsePagination(req.query)
+
+  if (pagination.error) {
+    return sendError(res, 400, 'INVALID_QUERY', pagination.error)
+  }
+
   if (req.query.sent_status && !ALLOWED_SENT_STATUS.includes(req.query.sent_status)) {
     return sendError(res, 400, 'INVALID_QUERY', 'Invalid sent_status')
   }
@@ -70,7 +77,7 @@ router.get('/', requireAuth, async (req, res) => {
         status,
         priority
       )
-    `)
+    `, { count: 'exact' })
     .eq('deadline.user_id', req.user.id)
 
   if (req.query.sent_status) {
@@ -85,13 +92,21 @@ router.get('/', requireAuth, async (req, res) => {
     query = query.lte('created_at', req.query.to)
   }
 
-  const { data, error } = await query.order('created_at', { ascending: false })
+  const { data, error, count } = await query
+    .order('created_at', { ascending: false })
+    .range(pagination.from, pagination.to)
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load reminders')
   }
 
-  return sendSuccess(res, data, 'Reminders loaded')
+  return sendSuccess(
+    res,
+    data || [],
+    'Reminders loaded',
+    200,
+    buildPaginationMeta(pagination.page, pagination.limit, count || 0)
+  )
 })
 
 router.patch('/deadlines/:id/reminder', requireAuth, async (req, res) => {

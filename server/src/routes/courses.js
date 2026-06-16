@@ -2,8 +2,12 @@ import express from 'express'
 import { supabaseAdmin } from '../config/supabase.js'
 import { requireAuth } from '../middleware/auth.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
-
-
+import {
+  buildPaginationMeta,
+  parsePagination,
+  parseSortOrder,
+  sanitizeSearchTerm,
+} from '../utils/query.js'
 
 const router = express.Router()
 
@@ -54,18 +58,60 @@ function validateCourseInput(body, partial = false) {
   return details
 }
 
+function buildCourseSearchFilter(value) {
+  const q = sanitizeSearchTerm(value)
+
+  if (!q) {
+    return ''
+  }
+
+  return `course_name.ilike.%${q}%,course_code.ilike.%${q}%`
+}
+
 router.get('/', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  const pagination = parsePagination(req.query)
+  const sortOrder = parseSortOrder(req.query.sort_order)
+
+  if (pagination.error) {
+    return sendError(res, 400, 'INVALID_QUERY', pagination.error)
+  }
+
+  if (!sortOrder) {
+    return sendError(res, 400, 'INVALID_QUERY', 'sort_order must be asc or desc')
+  }
+
+  let query = supabaseAdmin
     .from('courses')
-    .select('id, user_id, course_name, course_code, semester, created_at, updated_at')
+    .select('id, user_id, course_name, course_code, semester, created_at, updated_at', {
+      count: 'exact',
+    })
     .eq('user_id', req.user.id)
-    .order('course_name', { ascending: true })
+
+  if (req.query.semester) {
+    query = query.eq('semester', req.query.semester)
+  }
+
+  const searchFilter = buildCourseSearchFilter(req.query.q)
+
+  if (searchFilter) {
+    query = query.or(searchFilter)
+  }
+
+  const { data, error, count } = await query
+    .order('course_name', { ascending: sortOrder === 'asc' })
+    .range(pagination.from, pagination.to)
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load courses')
   }
 
-  return sendSuccess(res, data, 'Courses loaded')
+  return sendSuccess(
+    res,
+    data || [],
+    'Courses loaded',
+    200,
+    buildPaginationMeta(pagination.page, pagination.limit, count || 0)
+  )
 })
 
 router.post('/', requireAuth, async (req, res) => {
