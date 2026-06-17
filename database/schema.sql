@@ -1,5 +1,5 @@
 -- UniDeadline Tracker MVP Supabase schema
--- Run this file in the Supabase SQL Editor before database/seed.sql.
+-- Run this file in the Supabase SQL Editor before database/seed.sql
 
 create extension if not exists pgcrypto;
 
