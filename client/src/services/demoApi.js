@@ -12,6 +12,13 @@ function addDays(days, hour = 23, minute = 59) {
   return date.toISOString()
 }
 
+function toDateInputValue(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function seedData() {
   const courses = [
     {
@@ -159,8 +166,8 @@ function getWeeklyDashboard(data, params) {
     .map((deadline) => withCourse(deadline, data.courses))
 
   return {
-    week_start: start.toISOString().slice(0, 10),
-    week_end: end.toISOString().slice(0, 10),
+    week_start: toDateInputValue(start),
+    week_end: toDateInputValue(end),
     summary: {
       total: deadlines.length,
       not_started: deadlines.filter((item) => effectiveStatus(item) === 'Not Started').length,

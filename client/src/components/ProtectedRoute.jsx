@@ -7,7 +7,7 @@ export default function ProtectedRoute({ children }) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <p className="text-slate-500">Dang tai...</p>
+        <p className="text-slate-500">Đang tải...</p>
       </div>
     )
   }
