@@ -76,3 +76,27 @@ export async function signInWithPassword({ email, password }) {
 export function signOut() {
   clearStoredSession()
 }
+
+export async function signUp({ email, password }) {
+  if (!hasSupabaseAuthConfig()) {
+    throw new Error('Supabase frontend environment variables are missing')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.error_description || payload.msg || 'Sign up failed')
+  }
+
+  return payload
+}
