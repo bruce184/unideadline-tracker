@@ -1,22 +1,69 @@
-﻿function App() {
-  return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <section className="mx-auto max-w-5xl rounded-2xl bg-white p-8 shadow">
-        <h1 className="text-3xl font-bold text-slate-900">
-          UniDeadline Tracker
-        </h1>
-        <p className="mt-3 text-slate-600">
-          Responsive Web App for managing courses, deadlines, status, weekly dashboard, and reminders.
-        </p>
+import { Navigate, Route, Routes } from 'react-router-dom'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/auth/Login'
+import Register from './pages/auth/Register'
+import Courses from './pages/courses/Courses'
+import Dashboard from './pages/dashboard/Dashboard'
+import DeadlineDetail from './pages/deadlines/DeadlineDetail'
+import DeadlineForm from './pages/deadlines/DeadlineForm'
+import Deadlines from './pages/deadlines/Deadlines'
 
-        <div className="mt-6 rounded-xl border border-slate-200 p-4">
-          <p className="font-semibold text-slate-800">Frontend is running.</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Next step: implement Auth, Course, Deadline, Dashboard, and Reminder modules.
-          </p>
-        </div>
-      </section>
-    </main>
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route
+        path="/dashboard"
+        element={(
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/courses"
+        element={(
+          <ProtectedRoute>
+            <Courses />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines"
+        element={(
+          <ProtectedRoute>
+            <Deadlines />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines/new"
+        element={(
+          <ProtectedRoute>
+            <DeadlineForm />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines/:id"
+        element={(
+          <ProtectedRoute>
+            <DeadlineDetail />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines/:id/edit"
+        element={(
+          <ProtectedRoute>
+            <DeadlineForm />
+          </ProtectedRoute>
+        )}
+      />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   )
 }
 
