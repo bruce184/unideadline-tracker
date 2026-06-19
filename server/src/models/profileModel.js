@@ -23,7 +23,7 @@ export function signInWithPassword({ email, password }) {
 export function createProfile(profile) {
   return getSupabaseAdmin()
     .from('profiles')
-    .insert(profile)
+    .upsert(profile, { onConflict: 'id' })
 }
 
 export function findProfileById(userId) {
