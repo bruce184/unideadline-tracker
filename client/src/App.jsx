@@ -1,4 +1,6 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { configureApiClient, getStoredAccessToken } from './services'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
@@ -9,6 +11,15 @@ import DeadlineForm from './pages/deadlines/DeadlineForm'
 import Deadlines from './pages/deadlines/Deadlines'
 
 function App() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    configureApiClient({
+      getAccessToken: () => getStoredAccessToken(),
+      onUnauthorized: () => navigate('/login'),
+    })
+  }, [navigate])
+
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

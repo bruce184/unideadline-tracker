@@ -97,10 +97,11 @@ export default function Login() {
                 id="password"
                 type="password"
                 required
+                minLength={8}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 className="mt-1 w-full rounded-lg border border-[#e5def8] bg-[#fbfaff] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6] focus:ring-2 focus:ring-[#eee8ff]"
-                placeholder="Tối thiểu 6 ký tự"
+                placeholder="Ít nhất 8 ký tự"
               />
             </div>
             <button
