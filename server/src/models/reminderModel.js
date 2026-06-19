@@ -13,7 +13,6 @@ export function findOwnedReminders({ userId, filters, from, to }) {
       created_at,
       deadline:deadlines!inner (
         id,
-        user_id,
         title,
         due_date
       )
