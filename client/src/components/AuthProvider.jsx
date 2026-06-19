@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AuthContext } from '../hooks/authContext'
-import { signInWithPassword, signOut, getStoredSession, signUp } from '../services/supabaseAuthService'
+import { signInWithPassword, signOut, getOrRefreshSession, signUp } from '../services/supabaseAuthService'
 import { getCurrentProfile } from '../services/authService'
 
 export default function AuthProvider({ children }) {
@@ -8,8 +8,8 @@ export default function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadSession = () => {
-      const session = getStoredSession()
+    const loadSession = async () => {
+      const session = await getOrRefreshSession()
       if (session && session.user) {
         setUser(session.user)
       } else {

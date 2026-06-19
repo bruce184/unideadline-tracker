@@ -27,6 +27,7 @@ export {
   clearStoredSession,
   getStoredAccessToken,
   getStoredSession,
+  getOrRefreshSession,
   hasSupabaseAuthConfig,
   signInWithPassword,
   signOut,
