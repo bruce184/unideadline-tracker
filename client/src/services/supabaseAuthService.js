@@ -77,7 +77,7 @@ export function signOut() {
   clearStoredSession()
 }
 
-export async function signUp({ email, password }) {
+export async function signUp({ email, password, data }) {
   if (!hasSupabaseAuthConfig()) {
     throw new Error('Supabase frontend environment variables are missing')
   }
@@ -89,7 +89,7 @@ export async function signUp({ email, password }) {
       Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, data }),
   })
 
   const payload = await response.json().catch(() => ({}))

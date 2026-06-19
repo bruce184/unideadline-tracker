@@ -94,6 +94,35 @@ create table if not exists public.profiles (
 );
 ```
 
+### 5.3. Automatic Profile Creation
+
+Frontend registration uses Supabase Auth with the anon key and sends
+`display_name` in user metadata. A security-definer trigger creates the matching
+profile without exposing the service role key to the client.
+
+```sql
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  insert into public.profiles (id, email, display_name)
+  values (
+    new.id,
+    new.email,
+    nullif(trim(new.raw_user_meta_data ->> 'display_name'), '')
+  );
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+```
+
 ---
 
 ## 6. Table: `courses`

@@ -219,6 +219,16 @@ Recommended security options:
 [x] Enable automatic RLS
 ```
 
+For the local MVP registration flow, configure Supabase Auth under
+`Authentication -> Providers -> Email`:
+
+```text
+[ ] Confirm email
+```
+
+The current UI signs in immediately after signup. If email confirmation is
+enabled, signup succeeds but the user must confirm the email before login.
+
 Collect:
 
 ```text

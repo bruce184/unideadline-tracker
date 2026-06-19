@@ -230,13 +230,20 @@ using (
 
 -- Auto-create profile when auth user is created
 create or replace function public.handle_new_user()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
 begin
-  insert into public.profiles (id, email)
-  values (new.id, new.email);
+  insert into public.profiles (id, email, display_name)
+  values (
+    new.id,
+    new.email,
+    nullif(trim(new.raw_user_meta_data ->> 'display_name'), '')
+  );
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
