@@ -85,7 +85,8 @@ export async function updateDeadlineReminder(req, res) {
   }
 
   if (!req.body.enabled) {
-    const { error } = await deletePendingReminders(deadline.id)
+    const deleteChannel = req.body.channel !== undefined ? channel : undefined
+    const { error } = await deletePendingReminders(deadline.id, deleteChannel)
 
     if (error) {
       return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be disabled')
