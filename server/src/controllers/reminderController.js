@@ -1,7 +1,12 @@
-import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import { buildPaginationMeta, isValidIsoDateTime, parsePagination } from '../utils/query.js'
 import { ALLOWED_CHANNELS, normalizeOffsets, validateReminderQuery } from '../utils/validation.js'
+import { findOwnedDeadlineById } from '../models/deadlineModel.js'
+import {
+  deletePendingReminders,
+  findOwnedReminders,
+  upsertReminderRows,
+} from '../models/reminderModel.js'
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
@@ -34,42 +39,12 @@ export async function listReminders(req, res) {
     return sendError(res, 400, 'INVALID_QUERY', 'Invalid date range')
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
-  let query = supabaseAdmin
-    .from('reminders')
-    .select(`
-      id,
-      deadline_id,
-      reminder_time,
-      offset_days,
-      channel,
-      sent_status,
-      created_at,
-      deadline:deadlines!inner (
-        id,
-        user_id,
-        title,
-        due_date
-      )
-    `, { count: 'exact' })
-    .eq('deadline.user_id', req.user.id)
-
-  if (req.query.sent_status) {
-    query = query.eq('sent_status', req.query.sent_status)
-  }
-
-  if (req.query.from) {
-    query = query.gte('reminder_time', req.query.from)
-  }
-
-  if (req.query.to) {
-    query = query.lte('reminder_time', req.query.to)
-  }
-
-  const { data, error, count } = await query
-    .order('reminder_time', { ascending: true })
-    .range(pagination.from, pagination.to)
+  const { data, error, count } = await findOwnedReminders({
+    userId: req.user.id,
+    filters: req.query,
+    from: pagination.from,
+    to: pagination.to,
+  })
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load reminders')
@@ -109,14 +84,8 @@ export async function updateDeadlineReminder(req, res) {
     return sendError(res, 400, 'VALIDATION_ERROR', 'Invalid reminder channel')
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
   if (!req.body.enabled) {
-    const { error } = await supabaseAdmin
-      .from('reminders')
-      .delete()
-      .eq('deadline_id', deadline.id)
-      .eq('sent_status', 'pending')
+    const { error } = await deletePendingReminders(deadline.id)
 
     if (error) {
       return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be disabled')
@@ -146,23 +115,13 @@ export async function updateDeadlineReminder(req, res) {
 
   const reminderRows = buildReminderRows(deadline, offsets, channel)
 
-  const { error: deleteError } = await supabaseAdmin
-    .from('reminders')
-    .delete()
-    .eq('deadline_id', deadline.id)
-    .eq('channel', channel)
-    .eq('sent_status', 'pending')
+  const { error: deleteError } = await deletePendingReminders(deadline.id, channel)
 
   if (deleteError) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be saved')
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('reminders')
-    .upsert(reminderRows, {
-      onConflict: 'deadline_id,offset_days,channel',
-    })
-    .select('id, deadline_id, reminder_time, offset_days, channel, sent_status, created_at')
+  const { data, error } = await upsertReminderRows(reminderRows)
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Reminder could not be saved')
@@ -175,14 +134,11 @@ export async function updateDeadlineReminder(req, res) {
  * Helper: Get a deadline owned by the user
  */
 async function getOwnedDeadline(deadlineId, userId) {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('deadlines')
-    .select('id, user_id, title, due_date, status')
-    .eq('id', deadlineId)
-    .eq('user_id', userId)
-    .single()
+  const { data, error } = await findOwnedDeadlineById(
+    deadlineId,
+    userId,
+    'id, user_id, title, due_date, status'
+  )
 
   if (error || !data) {
     return null

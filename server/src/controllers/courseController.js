@@ -1,7 +1,13 @@
-import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import { buildPaginationMeta, parsePagination, parseSortOrder, sanitizeSearchTerm } from '../utils/query.js'
 import { validateCourseInput, normalizeOptionalText } from '../utils/validation.js'
+import {
+  createCourseRecord,
+  deleteOwnedCourse,
+  findOwnedCourses,
+  updateOwnedCourse,
+} from '../models/courseModel.js'
+import { countOwnedDeadlinesForCourse } from '../models/deadlineModel.js'
 
 /**
  * List all courses for current user
@@ -19,28 +25,15 @@ export async function listCourses(req, res) {
     return sendError(res, 400, 'INVALID_QUERY', 'sort_order must be asc or desc')
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
-  let query = supabaseAdmin
-    .from('courses')
-    .select('id, user_id, course_name, course_code, semester, created_at, updated_at', {
-      count: 'exact',
-    })
-    .eq('user_id', req.user.id)
-
-  if (req.query.semester) {
-    query = query.eq('semester', req.query.semester)
-  }
-
   const searchFilter = buildCourseSearchFilter(req.query.q)
-
-  if (searchFilter) {
-    query = query.or(searchFilter)
-  }
-
-  const { data, error, count } = await query
-    .order('course_name', { ascending: sortOrder === 'asc' })
-    .range(pagination.from, pagination.to)
+  const { data, error, count } = await findOwnedCourses({
+    userId: req.user.id,
+    semester: req.query.semester,
+    searchFilter,
+    sortOrder,
+    from: pagination.from,
+    to: pagination.to,
+  })
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load courses')
@@ -73,13 +66,7 @@ export async function createCourse(req, res) {
     semester: normalizeOptionalText(req.body.semester),
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .insert(payload)
-    .select('id, user_id, course_name, course_code, semester, created_at, updated_at')
-    .single()
+  const { data, error } = await createCourseRecord(payload)
 
   if (error) {
     return sendError(res, 409, 'CONFLICT', 'Course could not be created')
@@ -120,15 +107,7 @@ export async function updateCourse(req, res) {
     updates.semester = normalizeOptionalText(req.body.semester)
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .update(updates)
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .select('id, user_id, course_name, course_code, semester, created_at, updated_at')
-    .single()
+  const { data, error } = await updateOwnedCourse(req.params.id, req.user.id, updates)
 
   if (error) {
     return sendError(res, 404, 'NOT_FOUND', 'Course was not found')
@@ -142,13 +121,10 @@ export async function updateCourse(req, res) {
  * DELETE /api/v1/courses/:id
  */
 export async function deleteCourse(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { count, error: countError } = await supabaseAdmin
-    .from('deadlines')
-    .select('id', { count: 'exact', head: true })
-    .eq('course_id', req.params.id)
-    .eq('user_id', req.user.id)
+  const { count, error: countError } = await countOwnedDeadlinesForCourse(
+    req.params.id,
+    req.user.id
+  )
 
   if (countError) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not check course deadlines')
@@ -163,13 +139,7 @@ export async function deleteCourse(req, res) {
     )
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .delete()
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .select('id')
-    .single()
+  const { data, error } = await deleteOwnedCourse(req.params.id, req.user.id)
 
   if (error || !data) {
     return sendError(res, 404, 'NOT_FOUND', 'Course was not found')

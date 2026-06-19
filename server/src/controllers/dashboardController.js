@@ -1,5 +1,5 @@
-import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
+import { findWeeklyOwnedDeadlines } from '../models/deadlineModel.js'
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
@@ -16,32 +16,11 @@ export async function getWeeklyDashboard(req, res) {
 
   weekStart = startOfWeek(weekStart)
   const weekEnd = endOfWeek(weekStart)
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('deadlines')
-    .select(`
-      id,
-      user_id,
-      course_id,
-      title,
-      due_date,
-      status,
-      priority,
-      description,
-      submission_link,
-      created_at,
-      updated_at,
-      course:courses (
-        id,
-        course_name,
-        course_code
-      )
-    `)
-    .eq('user_id', req.user.id)
-    .gte('due_date', weekStart.toISOString())
-    .lte('due_date', weekEnd.toISOString())
-    .order('due_date', { ascending: true })
+  const { data, error } = await findWeeklyOwnedDeadlines(
+    req.user.id,
+    weekStart.toISOString(),
+    weekEnd.toISOString()
+  )
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load weekly dashboard')

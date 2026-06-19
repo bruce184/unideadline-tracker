@@ -1,12 +1,18 @@
-import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
+import {
+  createConfirmedUser,
+  createProfile,
+  findProfileByEmail,
+  findProfileById,
+  signInWithPassword,
+  updateProfileById,
+} from '../models/profileModel.js'
 
 /**
  * Register
  * POST /api/v1/auth/register
  */
 export async function register(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
   const { email, password, display_name } = req.body
 
   // Validation
@@ -29,11 +35,7 @@ export async function register(req, res) {
   }
 
   // Check existing user
-  const { data: existingProfile } = await supabaseAdmin
-    .from('profiles')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle()
+  const { data: existingProfile } = await findProfileByEmail(email)
 
   if (existingProfile) {
     return sendError(
@@ -45,11 +47,7 @@ export async function register(req, res) {
   }
 
   // Create user directly without sending verification email
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true
-  })
+  const { data, error } = await createConfirmedUser({ email, password })
 
   if (error) {
     return sendError(
@@ -61,13 +59,11 @@ export async function register(req, res) {
   }
 
   // Create profile
-  const { error: profileError } = await supabaseAdmin
-    .from('profiles')
-    .insert({
-      id: data.user.id,
-      email,
-      display_name: display_name?.trim() || null
-    })
+  const { error: profileError } = await createProfile({
+    id: data.user.id,
+    email,
+    display_name: display_name?.trim() || null,
+  })
 
   if (profileError) {
     return sendError(
@@ -94,7 +90,6 @@ export async function register(req, res) {
  * POST /api/v1/auth/login
  */
 export async function login(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
   const { email, password } = req.body
 
   if (!email || !password) {
@@ -106,10 +101,7 @@ export async function login(req, res) {
     )
   }
 
-  const { data, error } = await supabaseAdmin.auth.signInWithPassword({
-    email,
-    password
-  })
+  const { data, error } = await signInWithPassword({ email, password })
 
   if (error) {
     return sendError(
@@ -135,13 +127,7 @@ export async function login(req, res) {
  * GET /api/v1/me
  */
 export async function getCurrentProfile(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('*')
-    .eq('id', req.user.id)
-    .single()
+  const { data, error } = await findProfileById(req.user.id)
 
   if (error) {
     return sendError(res, 404, 'PROFILE_NOT_FOUND', 'Profile not found')
@@ -155,15 +141,11 @@ export async function getCurrentProfile(req, res) {
  * PATCH /api/v1/me
  */
 export async function updateProfile(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
   const { display_name } = req.body
 
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .update({ display_name: display_name?.trim() || null })
-    .eq('id', req.user.id)
-    .select()
-    .single()
+  const { data, error } = await updateProfileById(req.user.id, {
+    display_name: display_name?.trim() || null,
+  })
 
   if (error) {
     return sendError(res, 400, 'UPDATE_FAILED', error.message)

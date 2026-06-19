@@ -1,7 +1,15 @@
-import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import { buildPaginationMeta, parsePagination, parseSortOrder, sanitizeSearchTerm, isValidIsoDateTime } from '../utils/query.js'
 import { validateDeadlineInput, validateDeadlineQuery, buildDeadlineValidationError, normalizeOptionalText } from '../utils/validation.js'
+import { findOwnedCourseById } from '../models/courseModel.js'
+import {
+  createDeadlineRecord,
+  deleteOwnedDeadline,
+  findOwnedDeadlineById,
+  findOwnedDeadlineDetails,
+  findOwnedDeadlines,
+  updateOwnedDeadline,
+} from '../models/deadlineModel.js'
 
 const ALLOWED_DEADLINE_FIELDS = [
   'course_id',
@@ -48,35 +56,18 @@ export async function listDeadlines(req, res) {
     return sendError(res, 400, 'INVALID_QUERY', 'Invalid date range')
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
-  let query = supabaseAdmin
-    .from('deadlines')
-    .select(`
-      id,
-      user_id,
-      course_id,
-      title,
-      due_date,
-      status,
-      priority,
-      description,
-      submission_link,
-      created_at,
-      updated_at,
-      course:courses (
-        id,
-        course_name,
-        course_code
-      )
-    `, { count: 'exact' })
-    .eq('user_id', req.user.id)
-
-  query = applyDeadlineFilters(query, req.query)
-
-  const { data, error, count } = await query
-    .order(sortBy, { ascending: sortOrder === 'asc' })
-    .range(pagination.from, pagination.to)
+  const filters = {
+    ...req.query,
+    q: sanitizeSearchTerm(req.query.q),
+  }
+  const { data, error, count } = await findOwnedDeadlines({
+    userId: req.user.id,
+    filters,
+    sortBy,
+    sortOrder,
+    from: pagination.from,
+    to: pagination.to,
+  })
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load deadlines')
@@ -126,25 +117,7 @@ export async function createDeadline(req, res) {
     submission_link: normalizeOptionalText(req.body.submission_link),
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('deadlines')
-    .insert(payload)
-    .select(`
-      id,
-      user_id,
-      course_id,
-      title,
-      due_date,
-      status,
-      priority,
-      description,
-      submission_link,
-      created_at,
-      updated_at
-    `)
-    .single()
+  const { data, error } = await createDeadlineRecord(payload)
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Deadline could not be created')
@@ -158,39 +131,7 @@ export async function createDeadline(req, res) {
  * GET /api/v1/deadlines/:id
  */
 export async function getDeadline(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('deadlines')
-    .select(`
-      id,
-      user_id,
-      course_id,
-      title,
-      due_date,
-      status,
-      priority,
-      description,
-      submission_link,
-      created_at,
-      updated_at,
-      course:courses (
-        id,
-        course_name,
-        course_code
-      ),
-      reminders (
-        id,
-        reminder_time,
-        offset_days,
-        channel,
-        sent_status,
-        created_at
-      )
-    `)
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .single()
+  const { data, error } = await findOwnedDeadlineDetails(req.params.id, req.user.id)
 
   if (error) {
     return sendError(res, 404, 'NOT_FOUND', 'Deadline was not found')
@@ -223,15 +164,11 @@ export async function updateDeadline(req, res) {
     )
   }
 
-  const supabaseAdmin = getSupabaseAdmin()
-
   // Check if deadline exists and belongs to user
-  const { data: existingDeadline, error: fetchError } = await supabaseAdmin
-    .from('deadlines')
-    .select('id, user_id, course_id')
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .single()
+  const { data: existingDeadline, error: fetchError } = await findOwnedDeadlineById(
+    req.params.id,
+    req.user.id
+  )
 
   if (fetchError || !existingDeadline) {
     return sendError(res, 404, 'NOT_FOUND', 'Deadline was not found')
@@ -276,25 +213,11 @@ export async function updateDeadline(req, res) {
     updates.submission_link = normalizeOptionalText(req.body.submission_link)
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('deadlines')
-    .update(updates)
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .select(`
-      id,
-      user_id,
-      course_id,
-      title,
-      due_date,
-      status,
-      priority,
-      description,
-      submission_link,
-      created_at,
-      updated_at
-    `)
-    .single()
+  const { data, error } = await updateOwnedDeadline(
+    req.params.id,
+    req.user.id,
+    updates
+  )
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Deadline could not be updated')
@@ -308,15 +231,7 @@ export async function updateDeadline(req, res) {
  * DELETE /api/v1/deadlines/:id
  */
 export async function deleteDeadline(req, res) {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('deadlines')
-    .delete()
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .select('id')
-    .single()
+  const { data, error } = await deleteOwnedDeadline(req.params.id, req.user.id)
 
   if (error || !data) {
     return sendError(res, 404, 'NOT_FOUND', 'Deadline was not found')
@@ -329,48 +244,7 @@ export async function deleteDeadline(req, res) {
  * Helper: Check if a course belongs to the user
  */
 async function ensureOwnedCourse(courseId, userId) {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('courses')
-    .select('id')
-    .eq('id', courseId)
-    .eq('user_id', userId)
-    .single()
+  const { data, error } = await findOwnedCourseById(courseId, userId)
 
   return !error && data
-}
-
-/**
- * Helper: Apply filters to deadline query
- */
-function applyDeadlineFilters(query, reqQuery) {
-  if (reqQuery.course_id) {
-    query = query.eq('course_id', reqQuery.course_id)
-  }
-
-  if (reqQuery.status) {
-    query = query.eq('status', reqQuery.status)
-  }
-
-  if (reqQuery.priority) {
-    query = query.eq('priority', reqQuery.priority)
-  }
-
-  if (reqQuery.from) {
-    query = query.gte('due_date', reqQuery.from)
-  }
-
-  if (reqQuery.to) {
-    query = query.lte('due_date', reqQuery.to)
-  }
-
-  if (reqQuery.q) {
-    const q = sanitizeSearchTerm(reqQuery.q)
-    if (q) {
-      query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`)
-    }
-  }
-
-  return query
 }

@@ -43,12 +43,21 @@ Suggested structure as the API grows:
 server/src/
 +-- index.js         # App bootstrap
 +-- routes/          # Route registration
-+-- controllers/     # Request handlers
-+-- services/        # Business logic
-+-- repositories/    # Supabase data access
++-- controllers/     # Request validation, orchestration, and responses
++-- models/          # Supabase/Auth data access by domain entity
++-- services/        # Optional complex business logic
 +-- middleware/      # Auth, validation, errors
 +-- utils/           # Pure helper functions
 ```
+
+Backend request flow:
+
+```text
+route -> controller -> model -> Supabase
+```
+
+Controllers must not call Supabase directly. Add a service layer only when
+business logic is complex enough to justify it.
 
 ## Database Placement
 
