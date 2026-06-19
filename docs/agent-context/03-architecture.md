@@ -6,6 +6,7 @@
 React UI
   -> frontend service function
   -> Express API route
+  -> auth middleware (protected endpoints)
   -> controller
   -> model
   -> Supabase query
@@ -30,7 +31,9 @@ React UI
 5. Derive `user_id` from the authenticated Supabase user.
 6. Keep ownership checks server-side.
 7. Do not add endpoints outside the contract unless the docs are updated and the task explicitly allows it.
-8. Keep Supabase/Auth queries in `server/src/models/`; controllers handle request validation, orchestration, and responses.
+8. Keep Supabase table queries in `server/src/models/`; auth token verification
+   stays in middleware, while controllers handle request validation,
+   orchestration, and responses.
 9. Add a service layer only for business logic that should not live in a controller or model.
 
 ## Database Rules

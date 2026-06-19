@@ -37,23 +37,23 @@ client/src/
 
 Use `server/src/` for Express code.
 
-Suggested structure as the API grows:
+Current backend structure:
 
 ```text
 server/src/
 +-- index.js         # App bootstrap
++-- config/           # Supabase client configuration
 +-- routes/          # Route registration
 +-- controllers/     # Request validation, orchestration, and responses
-+-- models/          # Supabase/Auth data access by domain entity
-+-- services/        # Optional complex business logic
-+-- middleware/      # Auth, validation, errors
++-- models/          # Supabase table data access by domain entity
++-- middleware/      # Auth token verification, validation, errors
 +-- utils/           # Pure helper functions
 ```
 
 Backend request flow:
 
 ```text
-route -> controller -> model -> Supabase
+route -> auth middleware (protected endpoints) -> controller -> model -> Supabase
 ```
 
 Controllers must not call Supabase directly. Add a service layer only when
