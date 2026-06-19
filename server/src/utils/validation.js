@@ -2,6 +2,8 @@
  * Validation utilities for all API endpoints
  */
 
+import { isValidIsoDateTime } from './query.js'
+
 export const ALLOWED_STATUS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
 export const USER_SELECTABLE_STATUS = ['Not Started', 'In Progress', 'Submitted']
 export const ALLOWED_PRIORITY = ['High', 'Medium', 'Low']
@@ -10,7 +12,11 @@ export const ALLOWED_SENT_STATUS = ['pending', 'sent', 'failed']
 export const ALLOWED_OFFSETS = [7, 3, 1, 0]
 export const DEFAULT_OFFSETS = [7, 3, 1]
 export const ALLOWED_SORT_FIELDS = ['due_date', 'created_at', 'priority', 'status']
-export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function isValidUuid(value) {
+  return typeof value === 'string' && UUID_PATTERN.test(value)
+}
 
 /**
  * Normalize optional text fields
@@ -89,10 +95,17 @@ export function validateDeadlineInput(body, partial = false) {
   const details = []
 
   if (!partial || body.course_id !== undefined) {
-    if (!String(body.course_id || '').trim()) {
+    const courseId = typeof body.course_id === 'string' ? body.course_id.trim() : ''
+
+    if (!courseId) {
       details.push({
         field: 'course_id',
         message: 'Course is required',
+      })
+    } else if (!isValidUuid(body.course_id)) {
+      details.push({
+        field: 'course_id',
+        message: 'Course ID must be a valid UUID',
       })
     }
   }
@@ -116,17 +129,17 @@ export function validateDeadlineInput(body, partial = false) {
   }
 
   if (!partial || body.due_date !== undefined) {
-    const dueDate = String(body.due_date || '').trim()
+    const dueDate = typeof body.due_date === 'string' ? body.due_date : ''
 
-    if (!dueDate) {
+    if (!dueDate.trim()) {
       details.push({
         field: 'due_date',
         message: 'Due date is required',
       })
-    } else if (Number.isNaN(Date.parse(dueDate))) {
+    } else if (!isValidIsoDateTime(dueDate, { allowDateOnly: false })) {
       details.push({
         field: 'due_date',
-        message: 'Due date must be a valid ISO 8601 datetime',
+        message: 'Due date must be a valid ISO 8601 datetime with Z or a +/-HH:MM UTC offset',
       })
     }
   }
@@ -191,7 +204,7 @@ export function buildDeadlineValidationError(details) {
  * Validate deadline query parameters
  */
 export function validateDeadlineQuery(query) {
-  if (query.course_id && !UUID_PATTERN.test(String(query.course_id))) {
+  if (query.course_id && !isValidUuid(query.course_id)) {
     return 'course_id must be a valid UUID'
   }
 

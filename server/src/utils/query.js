@@ -1,3 +1,6 @@
+const ISO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
+const ISO_DATE_TIME_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,9}))?)?(Z|([+-])(\d{2}):(\d{2}))$/
+
 export function parsePagination(query) {
   const page = parseInteger(query.page, 1)
   const limit = parseInteger(query.limit, 20)
@@ -39,8 +42,47 @@ export function parseSortOrder(value, defaultValue = 'asc') {
   return sortOrder
 }
 
-export function isValidIsoDateTime(value) {
-  return value === undefined || !Number.isNaN(Date.parse(String(value)))
+export function isValidIsoDateTime(value, { allowDateOnly = true } = {}) {
+  if (value === undefined) {
+    return true
+  }
+
+  if (typeof value !== 'string') {
+    return false
+  }
+
+  const dateMatch = value.match(ISO_DATE_PATTERN)
+
+  if (allowDateOnly && dateMatch) {
+    return isValidCalendarDate(dateMatch[1], dateMatch[2], dateMatch[3])
+  }
+
+  const dateTimeMatch = value.match(ISO_DATE_TIME_PATTERN)
+
+  if (!dateTimeMatch) {
+    return false
+  }
+
+  const [, year, month, day, hour, minute, second = '0', , zone, , offsetHour, offsetMinute] = dateTimeMatch
+
+  if (!isValidCalendarDate(year, month, day)) {
+    return false
+  }
+
+  if (Number(hour) > 23 || Number(minute) > 59 || Number(second) > 59) {
+    return false
+  }
+
+  if (zone !== 'Z') {
+    const offsetHours = Number(offsetHour)
+    const offsetMinutes = Number(offsetMinute)
+
+    if (offsetHours > 14 || offsetMinutes > 59 || (offsetHours === 14 && offsetMinutes !== 0)) {
+      return false
+    }
+  }
+
+  return !Number.isNaN(Date.parse(value))
 }
 
 export function sanitizeSearchTerm(value) {
@@ -68,4 +110,35 @@ function parseInteger(value, defaultValue) {
   }
 
   return Number(text)
+}
+
+function isValidCalendarDate(yearValue, monthValue, dayValue) {
+  const year = Number(yearValue)
+  const month = Number(monthValue)
+  const day = Number(dayValue)
+
+  if (year < 1 || month < 1 || month > 12 || day < 1) {
+    return false
+  }
+
+  const daysInMonth = [
+    31,
+    isLeapYear(year) ? 29 : 28,
+    31,
+    30,
+    31,
+    30,
+    31,
+    31,
+    30,
+    31,
+    30,
+    31,
+  ]
+
+  return day <= daysInMonth[month - 1]
+}
+
+function isLeapYear(year) {
+  return year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
 }

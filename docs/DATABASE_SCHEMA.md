@@ -25,7 +25,7 @@ This file must stay aligned with `docs/API_CONTRACT.md`.
 | Public app schema | `public` |
 | Primary key type | `uuid` |
 | Date/time type | `timestamptz` |
-| API datetime format | ISO 8601 |
+| API datetime format | ISO 8601; datetime fields require `Z` or a `+/-HH:MM` UTC offset |
 | Display timezone | Asia/Ho_Chi_Minh |
 
 Required extension:

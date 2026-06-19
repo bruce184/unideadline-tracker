@@ -37,7 +37,7 @@ VITE_API_BASE_URL=http://localhost:3001/api/v1
 | Request format | JSON |
 | Response format | JSON |
 | ID format | UUID string |
-| Date/time format | ISO 8601 |
+| Date/time format | ISO 8601; datetime fields require `Z` or a `+/-HH:MM` UTC offset |
 | Display timezone | Asia/Ho_Chi_Minh |
 | Auth provider | Supabase Auth |
 | Protected auth header | `Authorization: Bearer <access_token>` |
@@ -258,7 +258,7 @@ A user should not create duplicate course names in the same semester.
 |---|---:|---|
 | `course_id` | Yes | UUID of course owned by current user |
 | `title` | Yes | Non-empty, max 160 characters |
-| `due_date` | Yes | Valid ISO 8601 datetime |
+| `due_date` | Yes | Valid ISO 8601 datetime with `Z` or a `+/-HH:MM` UTC offset |
 | `status` | No | Allowed status value |
 | `priority` | No | Allowed priority value |
 | `description` | No | Max 2000 characters |

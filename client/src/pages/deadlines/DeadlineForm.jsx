@@ -8,6 +8,7 @@ import {
   priorityLabel,
   statusLabel,
   toDateTimeLocal,
+  toIsoDateTime,
   USER_STATUS_OPTIONS,
 } from '../../utils/deadlineUtils'
 
@@ -104,6 +105,7 @@ export default function DeadlineForm() {
     const payload = {
       ...form,
       title: form.title.trim(),
+      due_date: toIsoDateTime(form.due_date),
       description: form.description.trim(),
       submission_link: form.submission_link.trim(),
     }

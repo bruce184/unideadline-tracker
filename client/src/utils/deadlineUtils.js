@@ -2,6 +2,8 @@ export const USER_STATUS_OPTIONS = ['Not Started', 'In Progress', 'Submitted']
 export const STATUS_OPTIONS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
 export const PRIORITY_OPTIONS = ['High', 'Medium', 'Low']
 const DISPLAY_TIMEZONE = 'Asia/Ho_Chi_Minh'
+const DISPLAY_TIMEZONE_OFFSET = '+07:00'
+const DISPLAY_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000
 
 export function getEffectiveStatus(deadline) {
   if (!deadline) return 'Not Started'
@@ -24,8 +26,17 @@ export function toDateTimeLocal(value) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
 
-  const offsetDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  const offsetDate = new Date(date.getTime() + DISPLAY_TIMEZONE_OFFSET_MS)
   return offsetDate.toISOString().slice(0, 16)
+}
+
+export function toIsoDateTime(value) {
+  if (!value) return ''
+
+  const normalized = value.length === 16 ? `${value}:00` : value
+  const date = new Date(`${normalized}${DISPLAY_TIMEZONE_OFFSET}`)
+
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString()
 }
 
 export function getMonday(date = new Date()) {
