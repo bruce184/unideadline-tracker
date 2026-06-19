@@ -2,6 +2,7 @@ import { sendError, sendSuccess } from '../utils/responses.js'
 import { findWeeklyOwnedDeadlines } from '../models/deadlineModel.js'
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const DISPLAY_TIMEZONE_OFFSET_MS = 7 * 60 * 60 * 1000
 
 /**
  * Get weekly dashboard data
@@ -16,10 +17,11 @@ export async function getWeeklyDashboard(req, res) {
 
   weekStart = startOfWeek(weekStart)
   const weekEnd = endOfWeek(weekStart)
+  const nextWeekStart = addDays(weekStart, 7)
   const { data, error } = await findWeeklyOwnedDeadlines(
     req.user.id,
-    weekStart.toISOString(),
-    weekEnd.toISOString()
+    toUtcInstant(weekStart),
+    toUtcInstant(nextWeekStart)
   )
 
   if (error) {
@@ -46,24 +48,19 @@ export async function getWeeklyDashboard(req, res) {
  */
 function startOfWeek(date) {
   const result = new Date(date)
-  const day = result.getDay()
+  const day = result.getUTCDay()
   const diff = day === 0 ? -6 : 1 - day
 
-  result.setDate(result.getDate() + diff)
-  result.setHours(0, 0, 0, 0)
+  result.setUTCDate(result.getUTCDate() + diff)
 
   return result
 }
 
 /**
- * Helper: Calculate end of week (Sunday 23:59:59)
+ * Helper: Calculate the Sunday calendar date for the response.
  */
 function endOfWeek(date) {
-  const result = new Date(date)
-  result.setDate(result.getDate() + 6)
-  result.setHours(23, 59, 59, 999)
-
-  return result
+  return addDays(date, 6)
 }
 
 /**
@@ -78,7 +75,7 @@ function formatDateOnly(date) {
  */
 function parseWeekStart(value) {
   if (value === undefined) {
-    return startOfWeek(new Date())
+    return getDisplayDate(new Date())
   }
 
   if (!DATE_ONLY_PATTERN.test(String(value))) {
@@ -92,6 +89,32 @@ function parseWeekStart(value) {
   }
 
   return date
+}
+
+/**
+ * Convert an instant to its calendar date in Asia/Ho_Chi_Minh.
+ */
+function getDisplayDate(date) {
+  const shiftedDate = new Date(date.getTime() + DISPLAY_TIMEZONE_OFFSET_MS)
+
+  return new Date(Date.UTC(
+    shiftedDate.getUTCFullYear(),
+    shiftedDate.getUTCMonth(),
+    shiftedDate.getUTCDate()
+  ))
+}
+
+/**
+ * Convert an Asia/Ho_Chi_Minh calendar midnight to a UTC instant.
+ */
+function toUtcInstant(date) {
+  return new Date(date.getTime() - DISPLAY_TIMEZONE_OFFSET_MS).toISOString()
+}
+
+function addDays(date, days) {
+  const result = new Date(date)
+  result.setUTCDate(result.getUTCDate() + days)
+  return result
 }
 
 /**

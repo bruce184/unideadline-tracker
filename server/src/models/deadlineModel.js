@@ -130,12 +130,12 @@ export function countOwnedDeadlinesForCourse(courseId, userId) {
     .eq('user_id', userId)
 }
 
-export function findWeeklyOwnedDeadlines(userId, weekStart, weekEnd) {
+export function findWeeklyOwnedDeadlines(userId, weekStart, nextWeekStart) {
   return getSupabaseAdmin()
     .from('deadlines')
     .select(DEADLINE_WITH_COURSE_FIELDS)
     .eq('user_id', userId)
     .gte('due_date', weekStart)
-    .lte('due_date', weekEnd)
+    .lt('due_date', nextWeekStart)
     .order('due_date', { ascending: true })
 }

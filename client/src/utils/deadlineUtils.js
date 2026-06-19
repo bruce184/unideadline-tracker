@@ -1,6 +1,7 @@
 export const USER_STATUS_OPTIONS = ['Not Started', 'In Progress', 'Submitted']
 export const STATUS_OPTIONS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
 export const PRIORITY_OPTIONS = ['High', 'Medium', 'Low']
+const DISPLAY_TIMEZONE = 'Asia/Ho_Chi_Minh'
 
 export function getEffectiveStatus(deadline) {
   if (!deadline) return 'Not Started'
@@ -14,7 +15,7 @@ export function formatDateTime(value) {
   return new Intl.DateTimeFormat('vi-VN', {
     dateStyle: 'medium',
     timeStyle: 'short',
-    timeZone: 'Asia/Ho_Chi_Minh',
+    timeZone: DISPLAY_TIMEZONE,
   }).format(new Date(value))
 }
 
@@ -28,18 +29,24 @@ export function toDateTimeLocal(value) {
 }
 
 export function getMonday(date = new Date()) {
-  const copy = new Date(date)
-  const day = copy.getDay()
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: DISPLAY_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+  const dateParts = Object.fromEntries(parts.map(({ type, value }) => [type, value]))
+  const copy = new Date(Date.UTC(dateParts.year, Number(dateParts.month) - 1, dateParts.day))
+  const day = copy.getUTCDay()
   const diff = day === 0 ? -6 : 1 - day
-  copy.setDate(copy.getDate() + diff)
-  copy.setHours(0, 0, 0, 0)
+  copy.setUTCDate(copy.getUTCDate() + diff)
   return copy
 }
 
 export function toDateInputValue(date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(date.getUTCDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
 }
 
