@@ -1,17 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
-import dotenv from 'dotenv'
-dotenv.config()
 
 let supabaseClient
 let supabaseAdminClient
 
 function getRequiredEnv(name) {
   const value = process.env[name]
-
   if (!value) {
     throw new Error(`Missing ${name}`)
   }
-
   return value
 }
 
@@ -22,7 +18,6 @@ export function getSupabase() {
       getRequiredEnv('SUPABASE_ANON_KEY')
     )
   }
-
   return supabaseClient
 }
 
@@ -39,6 +34,5 @@ export function getSupabaseAdmin() {
       }
     )
   }
-
   return supabaseAdminClient
 }

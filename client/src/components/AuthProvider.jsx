@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AuthContext } from '../hooks/authContext'
-import { signInWithPassword, signOut, getStoredSession, signUp } from '../services/supabaseAuthService'
+import { signInWithPassword, signOut, getStoredSession } from '../services/supabaseAuthService'
+import { apiRequest } from '../services/apiClient'
+import { getCurrentProfile } from '../services/authService'
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
@@ -16,19 +18,37 @@ export default function AuthProvider({ children }) {
       }
       setLoading(false)
     }
-    
+
     loadSession()
   }, [])
 
   const login = async (email, password) => {
-    const session = await signInWithPassword({ email, password })
-    setUser(session.user)
+    try {
+      const session = await signInWithPassword({ email, password })
+      const fullProfile = await getCurrentProfile()
+      setUser({ ...session.user, ...fullProfile })
+    } catch (error) {
+      throw error
+    }
   }
 
-  const register = async (email, password) => {
-    await signUp({ email, password })
-    const session = await signInWithPassword({ email, password })
-    setUser(session.user)
+  const register = async (email, password, displayName) => {
+    try {
+      // Gọi backend thay vì Supabase trực tiếp
+      // Backend dùng admin.createUser() với email_confirm: true → không gửi email
+      await apiRequest('/auth/register', {
+        method: 'POST',
+        auth: false, // public endpoint, chưa có token
+        body: { email, password, display_name: displayName },
+      })
+
+      // Backend đã confirm email → login bình thường ngay
+      const session = await signInWithPassword({ email, password })
+      const fullProfile = await getCurrentProfile()
+      setUser({ ...session.user, ...fullProfile })
+    } catch (error) {
+      throw error
+    }
   }
 
   const logout = async () => {

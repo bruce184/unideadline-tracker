@@ -5,7 +5,7 @@ export {
   configureApiClient,
   getApiBaseUrl,
 } from './apiClient'
-export { getCurrentProfile } from './authService'
+export { getCurrentProfile, updateProfile } from './authService'
 export {
   createCourse,
   deleteCourse,
