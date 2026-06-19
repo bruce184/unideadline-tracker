@@ -3,6 +3,7 @@
  */
 
 export const ALLOWED_STATUS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
+export const USER_SELECTABLE_STATUS = ['Not Started', 'In Progress', 'Submitted']
 export const ALLOWED_PRIORITY = ['High', 'Medium', 'Low']
 export const ALLOWED_CHANNELS = ['in_app', 'email']
 export const ALLOWED_SENT_STATUS = ['pending', 'sent', 'failed']
@@ -130,7 +131,7 @@ export function validateDeadlineInput(body, partial = false) {
     }
   }
 
-  if (body.status !== undefined && !ALLOWED_STATUS.includes(body.status)) {
+  if (body.status !== undefined && !USER_SELECTABLE_STATUS.includes(body.status)) {
     details.push({
       field: 'status',
       message: 'Status is invalid',

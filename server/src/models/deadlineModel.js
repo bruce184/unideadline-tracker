@@ -23,7 +23,7 @@ const DEADLINE_WITH_COURSE_FIELDS = `
   )
 `
 
-export function findOwnedDeadlines({ userId, filters, sortBy, sortOrder, from, to }) {
+export function findOwnedDeadlines({ userId, filters, sortBy, sortOrder, from, to, now }) {
   let query = getSupabaseAdmin()
     .from('deadlines')
     .select(DEADLINE_WITH_COURSE_FIELDS, { count: 'exact' })
@@ -33,8 +33,16 @@ export function findOwnedDeadlines({ userId, filters, sortBy, sortOrder, from, t
     query = query.eq('course_id', filters.course_id)
   }
 
-  if (filters.status) {
+  if (filters.status === 'Overdue') {
+    query = query
+      .lt('due_date', now)
+      .neq('status', 'Submitted')
+  } else if (filters.status) {
     query = query.eq('status', filters.status)
+
+    if (filters.status !== 'Submitted') {
+      query = query.gte('due_date', now)
+    }
   }
 
   if (filters.priority) {

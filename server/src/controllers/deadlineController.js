@@ -68,6 +68,7 @@ export async function listDeadlines(req, res) {
     sortOrder,
     from: pagination.from,
     to: pagination.to,
+    now: new Date().toISOString(),
   })
 
   if (error) {
