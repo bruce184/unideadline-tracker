@@ -10,7 +10,6 @@ export const ALLOWED_PRIORITY = ['High', 'Medium', 'Low']
 export const ALLOWED_CHANNELS = ['in_app', 'email']
 export const ALLOWED_SENT_STATUS = ['pending', 'sent', 'failed']
 export const ALLOWED_OFFSETS = [7, 3, 1, 0]
-export const DEFAULT_OFFSETS = [7, 3, 1]
 export const ALLOWED_SORT_FIELDS = ['due_date', 'created_at', 'priority', 'status']
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -227,17 +226,11 @@ export function validateDeadlineQuery(query) {
  * Validate reminder offsets
  */
 export function normalizeOffsets(value) {
-  if (value === undefined) {
-    return DEFAULT_OFFSETS
-  }
-
   if (!Array.isArray(value) || value.length === 0) {
     return null
   }
 
-  const offsets = value.map((item) => Number(item))
-
-  const hasInvalidOffset = offsets.some((item) => (
+  const hasInvalidOffset = value.some((item) => (
     !Number.isInteger(item) || !ALLOWED_OFFSETS.includes(item)
   ))
 
@@ -245,7 +238,7 @@ export function normalizeOffsets(value) {
     return null
   }
 
-  return [...new Set(offsets)].sort((a, b) => b - a)
+  return [...new Set(value)].sort((a, b) => b - a)
 }
 
 /**
