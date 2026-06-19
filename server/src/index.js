@@ -1,4 +1,4 @@
-﻿import express from 'express'
+import express from 'express'
 import cors from 'cors'
 import { requireAuth } from './middleware/auth.js'
 import { sendError } from './utils/responses.js'
@@ -39,12 +39,6 @@ app.get('/api/v1/health', (req, res) => {
 })
 
 
-app.get('/api/v1', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'Welcome to UniDeadline Tracker API',
-  })
-})
 
 app.use((err, req, res, _next) => {
   console.error(err)
