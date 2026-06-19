@@ -69,7 +69,10 @@ export async function createCourse(req, res) {
   const { data, error } = await createCourseRecord(payload)
 
   if (error) {
-    return sendError(res, 409, 'CONFLICT', 'Course could not be created')
+    if (error.code === '23505') {
+      return sendError(res, 409, 'CONFLICT', 'Course could not be created')
+    }
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Course could not be created')
   }
 
   return sendSuccess(res, data, 'Course created', 201)
