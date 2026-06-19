@@ -22,29 +22,21 @@ export default function AuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
-    try {
-      const session = await signInWithPassword({ email, password })
-      const fullProfile = await getCurrentProfile()
-      setUser({ ...session.user, ...fullProfile })
-    } catch (error) {
-      throw error
-    }
+    const session = await signInWithPassword({ email, password })
+    const fullProfile = await getCurrentProfile()
+    setUser({ ...session.user, ...fullProfile })
   }
 
   const register = async (email, password, displayName) => {
-    try {
-      await signUp({
-        email,
-        password,
-        data: { display_name: displayName },
-      })
+    await signUp({
+      email,
+      password,
+      data: { display_name: displayName },
+    })
 
-      const session = await signInWithPassword({ email, password })
-      const fullProfile = await getCurrentProfile()
-      setUser({ ...session.user, ...fullProfile })
-    } catch (error) {
-      throw error
-    }
+    const session = await signInWithPassword({ email, password })
+    const fullProfile = await getCurrentProfile()
+    setUser({ ...session.user, ...fullProfile })
   }
 
   const logout = async () => {
