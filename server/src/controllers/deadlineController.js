@@ -229,12 +229,7 @@ export async function updateDeadline(req, res) {
     const { error: reminderError } = await deletePendingReminders(req.params.id)
 
     if (reminderError) {
-      return sendError(
-        res,
-        500,
-        'INTERNAL_SERVER_ERROR',
-        'Could not remove pending reminders'
-      )
+      console.error(`Warning: Failed to clean up pending reminders for deadline ${req.params.id}:`, reminderError)
     }
   }
 
