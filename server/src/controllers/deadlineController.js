@@ -10,6 +10,7 @@ import {
   findOwnedDeadlines,
   updateOwnedDeadline,
 } from '../models/deadlineModel.js'
+import { deletePendingReminders } from '../models/reminderModel.js'
 
 const ALLOWED_DEADLINE_FIELDS = [
   'course_id',
@@ -221,6 +222,19 @@ export async function updateDeadline(req, res) {
 
   if (error) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Deadline could not be updated')
+  }
+
+  if (updates.status === 'Submitted') {
+    const { error: reminderError } = await deletePendingReminders(req.params.id)
+
+    if (reminderError) {
+      return sendError(
+        res,
+        500,
+        'INTERNAL_SERVER_ERROR',
+        'Could not remove pending reminders'
+      )
+    }
   }
 
   return sendSuccess(res, data, 'Deadline updated')
