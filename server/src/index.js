@@ -2,12 +2,13 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { requireAuth } from './middleware/auth.js'
-import { getSupabaseAdmin } from './config/supabase.js'
-import { sendError, sendSuccess } from './utils/responses.js'
+import { sendError } from './utils/responses.js'
+import { getCurrentUser } from './controllers/authController.js'
 import courseRoutes from './routes/courses.js'
 import deadlineRoutes from './routes/deadlines.js'
 import dashboardRoutes from './routes/dashboard.js'
 import reminderRoutes, { deadlineReminderRoutes } from './routes/reminders.js'
+
 dotenv.config()
 
 const app = express()
@@ -38,26 +39,7 @@ app.get('/api/v1/health', (req, res) => {
   })
 })
 
-app.get('/api/v1/me', requireAuth, async (req, res) => {
-  const supabaseAdmin = getSupabaseAdmin()
-
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('id, email, display_name, created_at, updated_at')
-    .eq('id', req.user.id)
-    .single()
-
-  if (error) {
-    return sendError(
-      res,
-      404,
-      'NOT_FOUND',
-      'Current user profile was not found'
-    )
-  }
-
-  return sendSuccess(res, data, 'Current user loaded')
-})
+app.get('/api/v1/me', requireAuth, getCurrentUser)
 
 app.get('/api/v1', (req, res) => {
   res.json({
