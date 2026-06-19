@@ -8,7 +8,6 @@ node_modules/
 .env.production
 client/.env
 server/.env
-mock
 
 # Build outputs
 dist/
