@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import ReminderAlert from '../../components/ReminderAlert'
 import { getWeeklyDashboard } from '../../services/dashboardService'
 import {
   formatDateTime,
@@ -92,6 +93,8 @@ export default function Dashboard() {
           </button>
         </div>
       )}
+
+      <ReminderAlert deadlines={deadlines} />
 
       <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
         <section className="rounded-2xl border border-[#e9e2fb] bg-white p-4 shadow-[0_14px_40px_rgba(91,69,170,0.07)] sm:p-5">
