@@ -229,6 +229,16 @@ For the local MVP registration flow, configure Supabase Auth under
 The current UI signs in immediately after signup. If email confirmation is
 enabled, signup succeeds but the user must confirm the email before login.
 
+Current registration form rules:
+
+- `display_name` is required and limited to 120 characters.
+- Password must contain at least 8 characters, one uppercase letter, and one
+  number.
+- A special character is not required for the MVP.
+
+Supabase may enforce additional password requirements configured for the
+project. Keep those settings compatible with the registration form.
+
 Collect:
 
 ```text

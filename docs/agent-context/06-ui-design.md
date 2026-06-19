@@ -37,6 +37,9 @@ Reminder settings or reminder controls
 3. Date/time values must be clear.
 4. `submission_link` must be optional and HTTP/HTTPS only.
 5. Destructive actions should require clear user intent.
+6. Registration requires `display_name` with a maximum of 120 characters.
+7. Registration passwords require at least 8 characters, one uppercase letter,
+   and one number; a special character is optional for the MVP.
 
 ## Responsive Rules
 
