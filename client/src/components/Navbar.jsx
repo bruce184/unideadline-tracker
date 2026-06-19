@@ -5,6 +5,8 @@ const navItems = [
   { to: '/dashboard', label: 'Tổng quan', tone: 'bg-[#5b45d8]' },
   { to: '/courses', label: 'Môn học', tone: 'bg-teal-500' },
   { to: '/deadlines', label: 'Deadline', tone: 'bg-amber-500' },
+  { to: '/ai-suggestions', label: 'Gợi ý AI', tone: 'bg-fuchsia-500' },
+  { to: '/risk-analysis', label: 'Phân tích rủi ro', tone: 'bg-rose-500' },
 ]
 
 function NavItem({ item, compact = false }) {
@@ -84,7 +86,7 @@ export default function Navbar() {
         </div>
       </header>
 
-      <nav className="fixed bottom-3 left-3 right-3 z-30 grid grid-cols-3 gap-2 rounded-2xl border border-[#e9e2fb] bg-white/95 p-2 shadow-[0_18px_40px_rgba(91,69,170,0.16)] backdrop-blur lg:hidden">
+      <nav className="fixed bottom-3 left-3 right-3 z-30 grid grid-cols-5 gap-2 rounded-2xl border border-[#e9e2fb] bg-white/95 p-2 shadow-[0_18px_40px_rgba(91,69,170,0.16)] backdrop-blur lg:hidden">
         {navItems.map((item) => (
           <NavItem key={item.to} item={item} compact />
         ))}
