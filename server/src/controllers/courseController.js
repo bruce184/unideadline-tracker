@@ -113,7 +113,13 @@ export async function updateCourse(req, res) {
   const { data, error } = await updateOwnedCourse(req.params.id, req.user.id, updates)
 
   if (error) {
-    return sendError(res, 404, 'NOT_FOUND', 'Course was not found')
+    if (error.code === '23505') {
+      return sendError(res, 409, 'CONFLICT', 'Course name already exists in this semester')
+    }
+    if (error.code === 'PGRST116') {
+      return sendError(res, 404, 'NOT_FOUND', 'Course was not found')
+    }
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Course could not be updated')
   }
 
   return sendSuccess(res, data, 'Course updated')
