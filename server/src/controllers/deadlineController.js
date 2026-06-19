@@ -176,8 +176,8 @@ export async function updateDeadline(req, res) {
     return sendError(res, 404, 'NOT_FOUND', 'Deadline was not found')
   }
 
-  // If course_id is being changed, verify it belongs to user
-  if (req.body.course_id && req.body.course_id !== existingDeadline.course_id) {
+  // If course_id is being changed or provided, verify it belongs to user
+  if (req.body.course_id) {
     const courseIsOwned = await ensureOwnedCourse(req.body.course_id, req.user.id)
 
     if (!courseIsOwned) {
