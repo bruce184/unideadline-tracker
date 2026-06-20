@@ -9,6 +9,8 @@ import Dashboard from './pages/dashboard/Dashboard'
 import DeadlineDetail from './pages/deadlines/DeadlineDetail'
 import DeadlineForm from './pages/deadlines/DeadlineForm'
 import Deadlines from './pages/deadlines/Deadlines'
+import AISuggestions from './pages/AI/AISuggestions'
+import RiskAnalysis from './pages/AI/RiskAnalysis'
 
 function App() {
   const navigate = useNavigate()
@@ -70,6 +72,22 @@ function App() {
         element={(
           <ProtectedRoute>
             <DeadlineForm />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/ai-suggestions"
+        element={(
+          <ProtectedRoute>
+            <AISuggestions />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/risk-analysis"
+        element={(
+          <ProtectedRoute>
+            <RiskAnalysis />
           </ProtectedRoute>
         )}
       />

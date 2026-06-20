@@ -26,7 +26,7 @@ export default function Register() {
   const handleSubmit = async (event) => {
     event.preventDefault()
     setError('')
-
+ 
     // Validate password before submit
     const passwordValidation = validatePassword(password)
     if (!passwordValidation.isValid) {
