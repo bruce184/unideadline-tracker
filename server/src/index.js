@@ -1,4 +1,4 @@
-﻿import express from 'express'
+import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv' 
 import { GoogleGenAI } from '@google/genai' 
@@ -32,7 +32,7 @@ app.use(cors({
 app.use(express.json())
 
 // ĐĂNG KÝ TUYẾN ĐƯỜNG CHAT TRỰC TIẾP TẠI ĐÂY
-app.post('/api/v1/chat', handleChatAI)
+app.post('/api/v1/chat', requireAuth, handleChatAI)
 
 // Các tuyến đường Router khác
 app.use('/api/v1/courses', courseRoutes)

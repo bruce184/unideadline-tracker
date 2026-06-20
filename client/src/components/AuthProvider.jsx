@@ -23,32 +23,24 @@ export default function AuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
-    try {
-      const session = await signInWithPassword({ email, password })
-      const fullProfile = await getCurrentProfile()
-      setUser({ ...session.user, ...fullProfile })
-    } catch (error) {
-      throw error
-    }
+    const session = await signInWithPassword({ email, password })
+    const fullProfile = await getCurrentProfile()
+    setUser({ ...session.user, ...fullProfile })
   }
-
+ 
   const register = async (email, password, displayName) => {
-    try {
-      // Gọi backend thay vì Supabase trực tiếp
-      // Backend dùng admin.createUser() với email_confirm: true → không gửi email
-      await apiRequest('/auth/register', {
-        method: 'POST',
-        auth: false, // public endpoint, chưa có token
-        body: { email, password, display_name: displayName },
-      })
+    // Gọi backend thay vì Supabase trực tiếp
+    // Backend dùng admin.createUser() với email_confirm: true → không gửi email
+    await apiRequest('/auth/register', {
+      method: 'POST',
+      auth: false, // public endpoint, chưa có token
+      body: { email, password, display_name: displayName },
+    })
 
-      // Backend đã confirm email → login bình thường ngay
-      const session = await signInWithPassword({ email, password })
-      const fullProfile = await getCurrentProfile()
-      setUser({ ...session.user, ...fullProfile })
-    } catch (error) {
-      throw error
-    }
+    // Backend đã confirm email → login bình thường ngay
+    const session = await signInWithPassword({ email, password })
+    const fullProfile = await getCurrentProfile()
+    setUser({ ...session.user, ...fullProfile })
   }
 
   const logout = async () => {

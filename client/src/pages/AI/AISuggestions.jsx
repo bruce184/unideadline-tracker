@@ -57,6 +57,9 @@ export default function AISuggestions() {
       setError('')
       const { data } = await getWeeklyDashboard({ week_start: weekStart })
       setDashboard(data)
+      const sum = summarizeRisk(data?.deadlines || [])
+      const busiest = findBusiestDay(data?.deadlines || [])
+      setMessages([{ id: 'intro', role: 'assistant', content: buildIntroMessage(sum, busiest) }])
     } catch (err) {
       setError(err?.message || 'Không thể tải dữ liệu deadline tuần này')
     } finally {
@@ -71,52 +74,47 @@ export default function AISuggestions() {
     return () => clearTimeout(timer)
   }, [fetchDashboard])
 
-  const deadlines = dashboard?.deadlines || []
+  const deadlines = useMemo(() => dashboard?.deadlines || [], [dashboard])
   const summary = useMemo(() => summarizeRisk(deadlines), [deadlines])
   const busiestDay = useMemo(() => findBusiestDay(deadlines), [deadlines])
-
-  useEffect(() => {
-    if (loading) return
-    setMessages([{ id: 'intro', role: 'assistant', content: buildIntroMessage(summary, busiestDay) }])
-  }, [loading])
-
+ 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
   }, [messages, thinking])
-
+ 
   // CHUYỂN THÀNH HÀM ASYNC ĐỂ CHỜ GEMINI API TRẢ LỜI THẬT
   const sendMessage = async (text) => {
     const trimmed = text.trim()
     if (!trimmed || thinking) return
-
+ 
     const userMessage = { id: `u-${Date.now()}`, role: 'user', content: trimmed }
-    
+     
     // Sao lưu trạng thái hội thoại trước khi update để đính kèm làm history gửi đi
     const currentMessages = [...messages]
-
+ 
     setMessages((current) => [...current, userMessage])
     setInput('')
     setThinking(true)
-
+ 
     try {
       // Format history trò chuyện cũ theo chuẩn của ứng dụng đưa lên backend xử lý tiếp
       const formattedHistory = currentMessages.map((msg) => ({
         sender: msg.role === 'user' ? 'user' : 'bot',
         text: msg.content
       }))
-
+ 
       // Gọi hàm tích hợp AI thật
       const reply = await generateAssistantReply(
         trimmed, 
         { summary, busiestDay }, 
         formattedHistory
       )
-
+ 
       setMessages((current) => [
         ...current, 
         { id: `a-${Date.now()}`, role: 'assistant', content: reply }
       ])
-    } catch (err) {
+    } catch {
       setMessages((current) => [
         ...current, 
         { id: `a-${Date.now()}`, role: 'assistant', content: 'Rất tiếc, AI không thể phản hồi vào lúc này.' }

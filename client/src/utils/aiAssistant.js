@@ -1,5 +1,6 @@
+import { apiRequest } from '../services/apiClient'
 import { formatDateTime } from './deadlineUtils'
-import { formatDaysLeft, weekdayLabel } from './riskAnalysis'
+import { weekdayLabel } from './riskAnalysis'
 
 function listTopDeadlines(scored, count = 3) {
   if (!scored.length) return 'Hiện tại không có deadline nào đang hoạt động.'
@@ -32,25 +33,16 @@ ${listTopDeadlines(summary.scored, 5)}
 `
 
   try {
-    // Gọi đến API Node.js backend (Đảm bảo backend của bạn chạy ở port 5000 hoặc config tương ứng)
-    const response = await fetch('http://localhost:3001/api/v1/chat', {
+    const result = await apiRequest('/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+      body: {
         message: message,
         context: deadlineContextString, // Gửi kèm context dữ liệu thật cho AI đọc
         history: history,               // Gửi kèm lịch sử chat để không bị "đần" khi hỏi câu tiếp theo
-      }),
+      },
     })
 
-    if (!response.ok) {
-      throw new Error('Lỗi phản hồi từ cổng API AI')
-    }
-
-    const data = await response.json()
-    return data.reply
+    return result.reply
   } catch (error) {
     console.error('Error calling AI Assistant:', error)
     return 'Xin lỗi bạn, kết nối đến Trợ lý AI đang gặp sự cố nhỏ. Vui lòng thử lại sau giây lát!'

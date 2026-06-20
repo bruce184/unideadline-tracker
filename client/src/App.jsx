@@ -9,8 +9,8 @@ import Dashboard from './pages/dashboard/Dashboard'
 import DeadlineDetail from './pages/deadlines/DeadlineDetail'
 import DeadlineForm from './pages/deadlines/DeadlineForm'
 import Deadlines from './pages/deadlines/Deadlines'
-import AISuggestions from './pages/ai/AISuggestions'
-import RiskAnalysis from './pages/ai/RiskAnalysis'
+import AISuggestions from './pages/AI/AISuggestions'
+import RiskAnalysis from './pages/AI/RiskAnalysis'
 
 function App() {
   const navigate = useNavigate()
