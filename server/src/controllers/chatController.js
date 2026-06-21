@@ -1,14 +1,12 @@
 import { GoogleGenAI } from '@google/genai'
-
-// Khởi tạo Gemini AI từ biến môi trường
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+import { sendSuccess, sendError } from '../utils/responses.js'
 
 export const handleChatAI = async (req, res) => {
     try {
         const { message, context, history } = req.body; 
 
         if (!message) {
-            return res.status(400).json({ error: "Tin nhắn không được bỏ trống" });
+            return sendError(res, 400, 'BAD_REQUEST', 'Tin nhắn không được bỏ trống');
         }
 
         const systemInstruction = `
@@ -31,6 +29,9 @@ QUY TẮC PHẢN HỒI:
             { role: 'user', parts: [{ text: message }] }
         ];
 
+        // Khởi tạo Gemini AI tại thời điểm request để đảm bảo env key đã được load
+        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: formattedContents,
@@ -40,9 +41,9 @@ QUY TẮC PHẢN HỒI:
             }
         });
 
-        res.json({ reply: response.text });
+        return sendSuccess(res, { reply: response.text });
     } catch (error) {
         console.error("Lỗi tại Chat Controller:", error);
-        res.status(500).json({ error: "Lỗi kết nối dịch vụ AI" });
+        return sendError(res, 500, 'AI_SERVICE_ERROR', 'Lỗi kết nối dịch vụ AI');
     }
 }

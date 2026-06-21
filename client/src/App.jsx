@@ -11,8 +11,11 @@ import Dashboard from './pages/dashboard/Dashboard'
 import DeadlineDetail from './pages/deadlines/DeadlineDetail'
 import DeadlineForm from './pages/deadlines/DeadlineForm'
 import Deadlines from './pages/deadlines/Deadlines'
+import Tasks from './pages/deadlines/Tasks'
 import AISuggestions from './pages/AI/AISuggestions'
 import RiskAnalysis from './pages/AI/RiskAnalysis'
+import Settings from './pages/settings/Settings'
+import Integrations from './pages/settings/Integrations'
 
 function App() {
   const navigate = useNavigate()
@@ -56,6 +59,14 @@ function App() {
         )}
       />
       <Route
+        path="/tasks"
+        element={(
+          <ProtectedRoute>
+            <Tasks />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
         path="/deadlines/new"
         element={(
           <ProtectedRoute>
@@ -95,9 +106,26 @@ function App() {
           </ProtectedRoute>
         )}
       />
+      <Route
+        path="/settings"
+        element={(
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/integrations"
+        element={(
+          <ProtectedRoute>
+            <Integrations />
+          </ProtectedRoute>
+        )}
+      />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
 }
 
 export default App
+

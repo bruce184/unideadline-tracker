@@ -42,7 +42,7 @@ ${listTopDeadlines(summary.scored, 5)}
       },
     })
 
-    return result.reply
+    return result.data?.reply || result.reply
   } catch (error) {
     console.error('Error calling AI Assistant:', error)
     return 'Xin lỗi bạn, kết nối đến Trợ lý AI đang gặp sự cố nhỏ. Vui lòng thử lại sau giây lát!'

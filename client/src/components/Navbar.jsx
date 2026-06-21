@@ -2,93 +2,147 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
-  { to: '/dashboard', label: 'Tổng quan', tone: 'bg-[#5b45d8]' },
-  { to: '/courses', label: 'Môn học', tone: 'bg-teal-500' },
-  { to: '/deadlines', label: 'Deadline', tone: 'bg-amber-500' },
-  { to: '/ai-suggestions', label: 'Gợi ý AI', tone: 'bg-fuchsia-500' },
-  { to: '/risk-analysis', label: 'Phân tích rủi ro', tone: 'bg-rose-500' },
+  { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
+  { to: '/deadlines', label: 'Lịch deadline', icon: 'calendar_month' },
+  { to: '/tasks', label: 'Nhiệm vụ', icon: 'assignment' },
+  { to: '/courses', label: 'Môn học', icon: 'menu_book' },
+  { to: '/ai-suggestions', label: 'Gợi ý AI', icon: 'smart_toy' },
+  { to: '/risk-analysis', label: 'Phân tích rủi ro', icon: 'analytics' },
 ]
 
-function NavItem({ item, compact = false }) {
-  return (
-    <NavLink
-      to={item.to}
-      className={({ isActive }) => (
-        `group flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
-          isActive
-            ? 'bg-[#eee8ff] font-semibold text-[#5140b6] shadow-sm'
-            : 'text-slate-500 hover:bg-white hover:text-[#5140b6] hover:shadow-sm'
-        } ${compact ? 'justify-center' : ''}`
-      )}
-    >
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-white shadow-sm">
-        <span className={`block h-3.5 w-3.5 rounded ${item.tone}`} />
-      </span>
-      {!compact && <span>{item.label}</span>}
-    </NavLink>
-  )
-}
-
 export default function Navbar() {
-  const { user, logout } = useAuth()
+  const { logout } = useAuth()
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
+      await logout()
+      navigate('/login')
+    }
   }
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[#e9e2fb] bg-white/95 px-4 py-5 shadow-[8px_0_30px_rgba(91,69,170,0.05)] backdrop-blur lg:block">
-        <div className="flex items-center gap-3 px-2">
-          <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#5b45d8] text-sm font-bold text-white shadow-[0_12px_24px_rgba(91,69,216,0.28)]">
-            UD
-          </div>
-          <div>
-            <p className="text-sm font-bold text-[#4d3fc0]">UniDeadline</p>
-            <p className="text-xs text-slate-400">Tracker</p>
-          </div>
+      {/* Desktop Sidebar Shell */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 border-r border-[#e9e2fb] bg-white lg:flex flex-col h-screen bg-surface">
+        {/* Brand Branding Header */}
+        <div className="p-6">
+          <h1 className="text-xl font-extrabold text-[#3b309e] tracking-tight">UniDeadline</h1>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 font-semibold opacity-70">Tracker</p>
         </div>
 
-        <nav className="mt-8 space-y-2">
+        {/* Menu Navigation */}
+        <nav className="flex-1 px-4 space-y-1.5 overflow-y-auto">
           {navItems.map((item) => (
-            <NavItem key={item.to} item={item} />
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => (
+                `flex items-center gap-3 p-2.5 rounded-xl transition-all ${
+                  isActive
+                    ? 'bg-[#f0ecf6] text-[#3b309e] font-bold border border-[#3b309e]/15'
+                    : 'text-[#474553] hover:bg-[#f0ecf6]/40 hover:text-[#3b309e]'
+                }`
+              )}
+            >
+              {({ isActive }) => (
+                <>
+                  <span
+                    className="material-symbols-outlined text-[20px] shrink-0"
+                    style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="font-body-md text-body-md">{item.label}</span>
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
 
-        <div className="absolute bottom-5 left-4 right-4 rounded-2xl border border-[#eee8ff] bg-[#fbfaff] p-3">
-          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Tài khoản</p>
-          <p className="truncate text-xs font-semibold text-slate-700">{user?.email}</p>
-          <button
-            onClick={handleLogout}
-            className="mt-3 w-full rounded-lg bg-[#5b45d8] px-3 py-2 text-xs font-semibold text-white hover:bg-[#4933c5]"
+        {/* Sidebar Footer Operations */}
+        <div className="p-4 border-t border-[#e9e2fb] space-y-2">
+          {/* Tích hợp Link Button */}
+          <NavLink
+            to="/integrations"
+            className={({ isActive }) => (
+              `w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl transition-all font-semibold text-xs cursor-pointer shadow-xs ${
+                isActive
+                  ? 'bg-[#3b309e] text-white'
+                  : 'bg-[#3b309e] text-white hover:bg-[#312888]'
+              }`
+            )}
           >
-            Đăng xuất
-          </button>
+            <span className="material-symbols-outlined text-[18px]">sync</span>
+            Tích hợp
+          </NavLink>
+
+          {/* Cài đặt Link */}
+          <NavLink
+            to="/settings"
+            className={({ isActive }) => (
+              `flex items-center gap-3 p-2.5 rounded-xl transition-all ${
+                isActive
+                  ? 'bg-[#f0ecf6] text-[#3b309e] font-bold border border-[#3b309e]/15'
+                  : 'text-[#474553] hover:bg-[#f0ecf6]/40 hover:text-[#3b309e]'
+              }`
+            )}
+          >
+            {({ isActive }) => (
+              <>
+                <span
+                  className="material-symbols-outlined text-[20px] shrink-0"
+                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  settings
+                </span>
+                <span className="font-body-md text-body-md">Cài đặt</span>
+              </>
+            )}
+          </NavLink>
         </div>
       </aside>
 
-      <header className="sticky top-0 z-20 border-b border-[#e9e2fb] bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-[#5b45d8] text-xs font-bold text-white">
-              UD
-            </div>
-            <span className="font-bold text-[#4d3fc0]">UniDeadline</span>
+      {/* Mobile Top Bar */}
+      <header className="sticky top-0 z-20 border-b border-[#e9e2fb] bg-white/90 px-4 py-3 backdrop-blur lg:hidden flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-[#3b309e] text-xs font-extrabold text-white">
+            UD
           </div>
-          <button
-            onClick={handleLogout}
-            className="rounded-lg bg-[#f0ebff] px-3 py-2 text-xs font-semibold text-[#5140b6]"
-          >
-            Đăng xuất
-          </button>
+          <span className="font-extrabold text-sm text-[#3b309e]">UniDeadline</span>
         </div>
+        <button
+          onClick={handleLogout}
+          className="rounded-lg bg-red-50 border border-red-200 text-red-600 px-3 py-1.5 text-xs font-bold"
+        >
+          Đăng xuất
+        </button>
       </header>
 
-      <nav className="fixed bottom-3 left-3 right-3 z-30 grid grid-cols-5 gap-2 rounded-2xl border border-[#e9e2fb] bg-white/95 p-2 shadow-[0_18px_40px_rgba(91,69,170,0.16)] backdrop-blur lg:hidden">
-        {navItems.map((item) => (
-          <NavItem key={item.to} item={item} compact />
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-2 py-1.5 bg-white border-t border-[#e9e2fb] lg:hidden shadow-lg">
+        {navItems.slice(0, 5).map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) => (
+              `flex flex-col items-center justify-center p-1 rounded-xl transition ${
+                isActive ? 'text-[#3b309e] font-bold' : 'text-slate-400'
+              }`
+            )}
+          >
+            {({ isActive }) => (
+              <>
+                <span
+                  className="material-symbols-outlined text-[20px]"
+                  style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                >
+                  {item.icon}
+                </span>
+                <span className="text-[9px] mt-0.5">{item.label}</span>
+              </>
+            )}
+          </NavLink>
         ))}
       </nav>
     </>

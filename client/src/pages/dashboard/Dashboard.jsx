@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import ReminderAlert from '../../components/ReminderAlert'
@@ -61,6 +61,27 @@ export default function Dashboard() {
   const deadlines = dashboard?.deadlines || []
   const nextDeadline = deadlines.find((deadline) => getEffectiveStatus(deadline) !== 'Submitted')
 
+  const aiInsightText = useMemo(() => {
+    const summary = dashboard?.summary
+    if (!summary || summary.total === 0) {
+      return 'Tuần này bạn không có deadline nào cần xử lý. Hãy tận dụng thời gian này để nghỉ ngơi hoặc chuẩn bị trước tài liệu!'
+    }
+
+    if (summary.overdue > 0) {
+      return `Bạn đang có ${summary.overdue} bài tập quá hạn chưa nộp! Ưu tiên hoàn thành các bài quá hạn này trước để hạn chế bị trừ điểm.`
+    }
+
+    if (summary.high_priority > 0) {
+      return `Tuần này có ${summary.high_priority} deadline mức độ ưu tiên Cao. Hãy tập trung giải quyết các bài này trước để tránh rủi ro trễ hạn.`
+    }
+
+    if (summary.in_progress > 0) {
+      return `Bạn có ${summary.in_progress} bài tập đang thực hiện. Hãy tiếp tục duy trì tiến độ học tập đều đặn mỗi ngày!`
+    }
+
+    return 'Tất cả các bài tập tuần này đã được hoàn thành xuất sắc hoặc chưa đến hạn cần lo lắng. Tinh thần học tập rất tốt!'
+  }, [dashboard])
+
   return (
     <Layout>
       <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -114,7 +135,7 @@ export default function Dashboard() {
               <div>
                 <p className="text-sm font-semibold text-[#5140b6]">AI insight & khuyến nghị</p>
                 <p className="mt-1 text-sm text-slate-600">
-                  Ưu tiên deadline mức cao và các bài quá hạn trước khi thêm việc mới.
+                  {loading ? 'Đang phân tích dữ liệu học tập...' : aiInsightText}
                 </p>
               </div>
               <Link
