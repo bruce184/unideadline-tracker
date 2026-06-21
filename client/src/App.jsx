@@ -4,6 +4,8 @@ import { configureApiClient, getStoredAccessToken } from './services'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import Courses from './pages/courses/Courses'
 import Dashboard from './pages/dashboard/Dashboard'
 import DeadlineDetail from './pages/deadlines/DeadlineDetail'
@@ -27,6 +29,8 @@ function App() {
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route
         path="/dashboard"
         element={(

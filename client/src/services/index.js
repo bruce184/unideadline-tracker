@@ -31,4 +31,7 @@ export {
   hasSupabaseAuthConfig,
   signInWithPassword,
   signOut,
+  sendResetPasswordEmail,
+  fetchUserData,
+  updateUserPassword,
 } from './supabaseAuthService'

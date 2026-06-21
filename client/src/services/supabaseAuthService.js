@@ -184,3 +184,74 @@ export async function signUp({ email, password, data }) {
 
   return payload
 }
+
+export async function sendResetPasswordEmail(email) {
+  if (!hasSupabaseAuthConfig()) {
+    throw new Error('Supabase frontend environment variables are missing')
+  }
+
+  const redirectTo = `${window.location.origin}/reset-password`
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/recover?redirect_to=${encodeURIComponent(redirectTo)}`, {
+    method: 'POST',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email }),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.error_description || payload.msg || 'Gửi yêu cầu khôi phục thất bại')
+  }
+
+  return payload
+}
+
+export async function fetchUserData(accessToken) {
+  if (!hasSupabaseAuthConfig()) {
+    throw new Error('Supabase frontend environment variables are missing')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'GET',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${accessToken}`,
+    },
+  })
+
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.error_description || payload.msg || 'Không thể lấy thông tin người dùng')
+  }
+
+  return payload
+}
+
+export async function updateUserPassword(accessToken, newPassword) {
+  if (!hasSupabaseAuthConfig()) {
+    throw new Error('Supabase frontend environment variables are missing')
+  }
+
+  const response = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    method: 'PUT',
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ password: newPassword }),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    throw new Error(payload.error_description || payload.msg || 'Đổi mật khẩu thất bại')
+  }
+
+  return payload
+}
