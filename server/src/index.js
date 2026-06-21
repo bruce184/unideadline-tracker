@@ -6,9 +6,8 @@ import courseRoutes from './routes/courses.js'
 import deadlineRoutes from './routes/deadlines.js'
 import dashboardRoutes from './routes/dashboard.js'
 import reminderRoutes, { deadlineReminderRoutes } from './routes/reminders.js'
-import { getCurrentProfile, updateProfile } from './controllers/authController.js'
+import { getCurrentProfile } from './controllers/authController.js'
 import { handleChatAI } from './controllers/chatController.js'
-import authRoutes from './routes/auth.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -30,11 +29,9 @@ app.use('/api/v1/courses', courseRoutes)
 app.use('/api/v1/deadlines', deadlineRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
 app.use('/api/v1/reminders', reminderRoutes)
-app.use('/api/v1/auth', authRoutes)
 app.use('/api/v1', deadlineReminderRoutes)
 
 app.get('/api/v1/me', requireAuth, getCurrentProfile)
-app.patch('/api/v1/me', requireAuth, updateProfile)
 
 app.get('/api/v1/health', (req, res) => {
   res.json({
