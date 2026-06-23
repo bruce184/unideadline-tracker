@@ -45,7 +45,7 @@ export default function Settings() {
           
           {/* Email và tên học sinh */}
           <div className="flex-1 text-center md:text-left space-y-1">
-            <h3 className="font-bold text-xl text-slate-900">John Doe</h3>
+            <h3 className="font-bold text-xl text-slate-900">{user?.display_name || 'No name'}</h3>
             <p className="text-sm text-slate-500 font-medium">{user?.email || 'john.doe@hcmut.edu.vn'}</p>
             
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-left border-t border-slate-100 mt-4">

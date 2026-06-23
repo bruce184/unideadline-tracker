@@ -1,274 +1,314 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import {
+  getGmailStatus,
+  connectGmail,
+  importFromGmail,
+  disconnectGmail,
+} from '../../services/gmailService'
 
 export default function Integrations() {
-  const [isConnected, setIsConnected] = useState(true)
-  
-  // Form states
-  const [url, setUrl] = useState('https://moodle.hcmut.edu.vn')
-  const [username, setUsername] = useState('MSSV hoặc Email')
-  const [password, setPassword] = useState('password123')
-  
-  // Toggles cho môn học
-  const [syncMath, setSyncMath] = useState(true)
-  const [syncPhys, setSyncPhys] = useState(true)
-  const [syncPhil, setSyncPhil] = useState(false)
-  const [syncSE, setSyncSE] = useState(true)
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const handleConnect = (e) => {
-    e.preventDefault()
-    setIsConnected(true)
+  const [connected, setConnected] = useState(false)
+  const [connectedAt, setConnectedAt] = useState(null)
+  const [loadingStatus, setLoadingStatus] = useState(true)
+
+  const [days, setDays] = useState(7)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState(null)
+
+  const [connecting, setConnecting] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  const [toast, setToast] = useState(null)
+
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 4000)
   }
 
-  const handleDisconnect = () => {
-    if (window.confirm('Bạn có chắc chắn muốn ngắt kết nối với Moodle không?')) {
-      setIsConnected(false)
+  const fetchStatus = useCallback(async () => {
+    try {
+      setLoadingStatus(true)
+      const data = await getGmailStatus()
+      setConnected(data.connected)
+      setConnectedAt(data.connectedAt)
+    } catch {
+      // setConnected(false)
+      console.error('fetchStatus error')
+    } finally {
+      setLoadingStatus(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStatus()
+  }, [fetchStatus])
+
+  // Đọc query param sau khi OAuth callback redirect về
+  useEffect(() => {
+    const gmailParam = searchParams.get('gmail')
+    if (gmailParam === 'connected') {
+      showToast('Kết nối Gmail thành công!')
+      setConnected(true)
+      fetchStatus()
+      setSearchParams({})
+    } else if (gmailParam === 'error') {
+      showToast('Kết nối Gmail thất bại. Vui lòng thử lại.', 'error')
+      setSearchParams({})
+    }
+  }, [searchParams, setSearchParams, fetchStatus])
+
+  const handleConnect = async () => {
+    try {
+      setConnecting(true)
+      await connectGmail()
+    } catch (err) {
+      showToast(err.message || 'Không thể kết nối Gmail', 'error')
+      setConnecting(false)
     }
   }
 
-  const handleSyncNow = () => {
-    alert('Đang đồng bộ hóa bài tập từ Moodle... Hoàn tất trong 2 giây!')
+  const handleDisconnect = async () => {
+    if (!window.confirm('Ngắt kết nối Gmail? Các deadline đã import sẽ được giữ lại.')) return
+    try {
+      setDisconnecting(true)
+      await disconnectGmail()
+      setConnected(false)
+      setConnectedAt(null)
+      setImportResult(null)
+      showToast('Đã ngắt kết nối Gmail')
+    } catch (err) {
+      showToast(err.message || 'Có lỗi xảy ra', 'error')
+    } finally {
+      setDisconnecting(false)
+    }
+  }
+
+  const handleImport = async () => {
+    try {
+      setImporting(true)
+      setImportResult(null)
+      const result = await importFromGmail(days)
+      setImportResult(result)
+      if (result.imported > 0) {
+        showToast(`Đã import ${result.imported} deadline mới từ Gmail!`)
+      } else {
+        showToast('Không tìm thấy deadline mới trong email.', 'info')
+      }
+    } catch (err) {
+      showToast(err.message || 'Import thất bại', 'error')
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const formatDate = (iso) => {
+    if (!iso) return ''
+    return new Date(iso).toLocaleDateString('vi-VN', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    })
   }
 
   return (
     <Layout>
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white transition-all ${
+          toast.type === 'error' ? 'bg-red-500' :
+          toast.type === 'info' ? 'bg-blue-500' : 'bg-emerald-500'
+        }`}>
+          {toast.message}
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex justify-between items-center px-4 py-3 w-full bg-white rounded-2xl border border-[#e9e2fb] mb-6 shadow-[0_14px_40px_rgba(91,69,170,0.03)]">
-        <h2 className="text-xl font-bold text-slate-900">Kết nối Moodle</h2>
+        <h2 className="text-xl font-bold text-slate-900">Tích hợp & Đồng bộ</h2>
       </header>
 
-      {/* Main Container */}
       <div className="max-w-4xl mx-auto space-y-6 pb-10">
-        
-        {/* Banner Mô tả tích hợp */}
+
+        {/* Banner */}
         <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <span className="material-symbols-outlined text-[40px] text-orange-500 bg-orange-50 p-2.5 rounded-xl border border-orange-100 shrink-0">school</span>
+            <span className="material-symbols-outlined text-[40px] text-red-500 bg-red-50 p-2.5 rounded-xl border border-red-100 shrink-0">
+              mail
+            </span>
             <div>
               <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
-                Moodle Integration
+                Gmail Integration
                 <span className="bg-gradient-to-r from-violet-500 to-[#3b309e] text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider flex items-center gap-0.5">
-                  <span className="material-symbols-outlined text-[10px] font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-                  AI Powered Sync
+                  <span className="material-symbols-outlined text-[10px] font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    auto_awesome
+                  </span>
+                  AI Powered
                 </span>
               </h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Tự động đồng bộ hóa thời hạn bài tập và sự kiện từ hệ thống LMS của trường bạn.
+                Tự động đọc email Gmail và dùng AI để trích xuất deadline, tạo nhắc nhở tức thì.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Thiết lập kết nối */}
+        {/* Main cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          
-          {/* Card trái: Thiết lập kết nối (nếu ngắt kết nối sẽ điền form) */}
+
+          {/* Card trái: trạng thái kết nối */}
           <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
             <h4 className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
-              Thiết lập kết nối
+              Trạng thái kết nối
               <span className="material-symbols-outlined text-[18px] text-slate-400">link</span>
             </h4>
-            
-            {isConnected ? (
-              <div className="text-center py-10 space-y-3">
-                <span className="material-symbols-outlined text-[48px] text-emerald-500">check_circle</span>
-                <p className="text-xs font-semibold text-slate-700">Tài khoản Moodle đã liên kết thành công!</p>
+
+            {loadingStatus ? (
+              <div className="flex items-center justify-center py-12 text-slate-400 text-xs gap-2">
+                <span className="material-symbols-outlined text-[18px] animate-spin">refresh</span>
+                Đang kiểm tra...
+              </div>
+            ) : connected ? (
+              <div className="text-center py-8 space-y-3">
+                <span className="material-symbols-outlined text-[52px] text-emerald-500">check_circle</span>
+                <div>
+                  <p className="text-sm font-bold text-slate-800">Gmail đã kết nối</p>
+                  {connectedAt && (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Từ {formatDate(connectedAt)}
+                    </p>
+                  )}
+                </div>
                 <button
                   onClick={handleDisconnect}
-                  className="text-xs text-red-600 font-bold hover:underline"
+                  disabled={disconnecting}
+                  className="text-xs text-red-500 font-semibold hover:underline disabled:opacity-50 cursor-pointer"
                 >
-                  Ngắt kết nối tài khoản
+                  {disconnecting ? 'Đang ngắt...' : 'Ngắt kết nối'}
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleConnect} className="space-y-4">
+              <div className="text-center py-8 space-y-4">
+                <span className="material-symbols-outlined text-[52px] text-slate-300">mail_off</span>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1" htmlFor="moodle-url">
-                    Moodle Server URL
-                  </label>
-                  <input
-                    id="moodle-url"
-                    type="url"
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 bg-slate-50 p-2.5 outline-none focus:border-[#3b309e] focus:bg-white"
-                    placeholder="https://moodle.youruniversity.edu"
-                    required
-                  />
+                  <p className="text-sm font-bold text-slate-700">Chưa kết nối Gmail</p>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Kết nối để AI tự động tìm deadline trong email của bạn.
+                  </p>
                 </div>
-                
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1" htmlFor="moodle-user">
-                    Tên đăng nhập
-                  </label>
-                  <input
-                    id="moodle-user"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 bg-slate-50 p-2.5 outline-none focus:border-[#3b309e] focus:bg-white"
-                    placeholder="MSSV hoặc Email"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-1" htmlFor="moodle-pass">
-                    Mật khẩu
-                  </label>
-                  <input
-                    id="moodle-pass"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full text-xs rounded-xl border border-slate-200 bg-slate-50 p-2.5 outline-none focus:border-[#3b309e] focus:bg-white"
-                    placeholder="••••••••"
-                    required
-                  />
-                </div>
-
                 <button
-                  type="submit"
-                  className="w-full bg-[#3b309e] text-white rounded-xl py-2.5 text-xs font-bold hover:bg-[#2e2482] transition shadow-xs cursor-pointer"
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="flex items-center gap-2 mx-auto bg-[#3b309e] text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-[#2e2482] transition disabled:opacity-60 cursor-pointer"
                 >
-                  Kết nối ngay
+                  <span className="material-symbols-outlined text-[16px]">mail</span>
+                  {connecting ? 'Đang chuyển hướng...' : 'Kết nối Gmail'}
                 </button>
-              </form>
+              </div>
             )}
           </section>
 
-          {/* Card phải: Trạng thái & Danh sách môn học đồng bộ */}
+          {/* Card phải: import */}
           <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
-            {isConnected ? (
-              <>
-                {/* Trạng thái đã kết nối */}
-                <div className="flex justify-between items-start border-b border-slate-100 pb-4">
+            <h4 className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
+              Import deadline từ Gmail
+              <span className="material-symbols-outlined text-[18px] text-slate-400">download</span>
+            </h4>
+
+            {connected ? (
+              <div className="space-y-4">
+                {/* Chọn khoảng thời gian */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">
+                    Quét email trong
+                  </label>
                   <div className="flex gap-2">
-                    <span className="material-symbols-outlined text-emerald-500 font-bold text-[20px]">check_circle</span>
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-800">Đã kết nối</h4>
-                      <p className="text-[10px] text-slate-400 mt-0.5">moodle.hcmut.edu.vn</p>
-                    </div>
-                  </div>
-                  <button 
-                    onClick={handleSyncNow}
-                    className="bg-[#3b309e] text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-[#2e2482] cursor-pointer transition shadow-xs"
-                  >
-                    Đồng bộ ngay
-                  </button>
-                </div>
-
-                {/* Danh sách môn học chọn đồng bộ */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wide">
-                    <span>Danh sách môn học</span>
-                    <button className="text-[#3b309e] hover:underline cursor-pointer">Chọn tất cả</button>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {/* Môn 1 */}
-                    <div className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
-                      <div>
-                        <h5 className="font-bold text-xs text-slate-800">Giải tích</h5>
-                        <p className="text-[10px] text-slate-400">MT1003 • 2 Deadline sắp tới</p>
-                      </div>
+                    {[7, 30].map((d) => (
                       <button
-                        onClick={() => setSyncMath(!syncMath)}
-                        className={`w-8 h-4.5 rounded-full transition-colors relative cursor-pointer ${
-                          syncMath ? 'bg-[#3b309e]' : 'bg-slate-200'
+                        key={d}
+                        onClick={() => setDays(d)}
+                        className={`flex-1 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                          days === d
+                            ? 'bg-[#3b309e] text-white border-[#3b309e]'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:border-[#3b309e]'
                         }`}
                       >
-                        <span className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                          syncMath ? 'left-4' : 'left-0.5'
-                        }`} />
+                        {d} ngày gần nhất
                       </button>
-                    </div>
-
-                    {/* Môn 2 */}
-                    <div className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
-                      <div>
-                        <h5 className="font-bold text-xs text-slate-800">Vật lý</h5>
-                        <p className="text-[10px] text-slate-400">PH1003 • 0 Deadline sắp tới</p>
-                      </div>
-                      <button
-                        onClick={() => setSyncPhys(!syncPhys)}
-                        className={`w-8 h-4.5 rounded-full transition-colors relative cursor-pointer ${
-                          syncPhys ? 'bg-[#3b309e]' : 'bg-slate-200'
-                        }`}
-                      >
-                        <span className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                          syncPhys ? 'left-4' : 'left-0.5'
-                        }`} />
-                      </button>
-                    </div>
-
-                    {/* Môn 3 */}
-                    <div className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
-                      <div>
-                        <h5 className="font-bold text-xs text-slate-800">Triết học</h5>
-                        <p className="text-[10px] text-slate-400">MS1001 • 1 Deadline sắp tới</p>
-                      </div>
-                      <button
-                        onClick={() => setSyncPhil(!syncPhil)}
-                        className={`w-8 h-4.5 rounded-full transition-colors relative cursor-pointer ${
-                          syncPhil ? 'bg-[#3b309e]' : 'bg-slate-200'
-                        }`}
-                      >
-                        <span className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                          syncPhil ? 'left-4' : 'left-0.5'
-                        }`} />
-                      </button>
-                    </div>
-
-                    {/* Môn 4 */}
-                    <div className="flex justify-between items-center p-2.5 bg-slate-50 border border-slate-100 rounded-lg">
-                      <div>
-                        <h5 className="font-bold text-xs text-slate-800">Software Engineering</h5>
-                        <p className="text-[10px] text-slate-400">CO3001 • 4 Deadline sắp tới</p>
-                      </div>
-                      <button
-                        onClick={() => setSyncSE(!syncSE)}
-                        className={`w-8 h-4.5 rounded-full transition-colors relative cursor-pointer ${
-                          syncSE ? 'bg-[#3b309e]' : 'bg-slate-200'
-                        }`}
-                      >
-                        <span className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${
-                          syncSE ? 'left-4' : 'left-0.5'
-                        }`} />
-                      </button>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              </>
+
+                {/* Nút import */}
+                <button
+                  onClick={handleImport}
+                  disabled={importing}
+                  className="w-full flex items-center justify-center gap-2 bg-[#3b309e] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#2e2482] transition disabled:opacity-60 cursor-pointer"
+                >
+                  <span className={`material-symbols-outlined text-[16px] ${importing ? 'animate-spin' : ''}`}>
+                    {importing ? 'refresh' : 'sync'}
+                  </span>
+                  {importing ? 'Đang import...' : 'Import ngay'}
+                </button>
+
+                {/* Kết quả import */}
+                {importResult && (
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2">
+                    <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                      Kết quả lần import vừa rồi
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2">
+                        <p className="text-lg font-bold text-emerald-600">{importResult.imported}</p>
+                        <p className="text-[10px] text-emerald-500 font-semibold">Đã import</p>
+                      </div>
+                      <div className="bg-slate-100 border border-slate-200 rounded-lg p-2">
+                        <p className="text-lg font-bold text-slate-500">{importResult.skipped}</p>
+                        <p className="text-[10px] text-slate-400 font-semibold">Bỏ qua</p>
+                      </div>
+                      <div className="bg-blue-50 border border-blue-100 rounded-lg p-2">
+                        <p className="text-lg font-bold text-blue-500">{importResult.total}</p>
+                        <p className="text-[10px] text-blue-400 font-semibold">Tổng email</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  AI sẽ đọc email và tự động nhận diện deadline. Chỉ email có thông tin hạn nộp mới được tạo.
+                </p>
+              </div>
             ) : (
-              <div className="text-center py-12 text-slate-400 text-xs">
-                Chưa có tài khoản LMS được kết nối. Hãy điền cấu hình bên trái.
+              <div className="flex items-center justify-center h-full py-12 text-slate-400 text-xs text-center">
+                Kết nối Gmail trước để bắt đầu import deadline.
               </div>
             )}
           </section>
         </div>
 
-        {/* Chân trang các cam kết bảo mật & năng lực */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+        {/* Footer badges */}
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
             <span className="material-symbols-outlined text-[#3b309e] text-[20px] block">security</span>
-            <h5 className="font-bold text-xs text-slate-800">Bảo mật tuyệt đối</h5>
+            <h5 className="font-bold text-xs text-slate-800">Chỉ đọc</h5>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Thông tin đăng nhập được lưu trữ cực bộ trên thiết bị của bạn. Dữ liệu được mã hóa đầu cuối.
-            </p>
-          </div>
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
-            <span className="material-symbols-outlined text-[#3b309e] text-[20px] block">bolt</span>
-            <h5 className="font-bold text-xs text-slate-800">Đồng bộ tức thì</h5>
-            <p className="text-[10px] text-slate-500 leading-relaxed">
-              Mọi thay đổi thời hạn nộp bài trên Moodle sẽ được cập nhật tự động trong vài giây.
+              App chỉ có quyền đọc email, không thể gửi hay xoá bất kỳ email nào.
             </p>
           </div>
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
             <span className="material-symbols-outlined text-[#3b309e] text-[20px] block">smart_toy</span>
-            <h5 className="font-bold text-xs text-slate-800">Phân tích AI</h5>
+            <h5 className="font-bold text-xs text-slate-800">AI nhận diện</h5>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Tự động ước tính thời gian làm bài, đề xuất ưu tiên thông minh dựa trên độ khó bài tập.
+              Gemini AI tự động phân tích nội dung email để tìm và trích xuất thông tin deadline.
+            </p>
+          </div>
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-1">
+            <span className="material-symbols-outlined text-[#3b309e] text-[20px] block">content_copy</span>
+            <h5 className="font-bold text-xs text-slate-800">Không trùng lặp</h5>
+            <p className="text-[10px] text-slate-500 leading-relaxed">
+              Mỗi email chỉ được import một lần, bấm sync nhiều lần cũng không bị trùng deadline.
             </p>
           </div>
         </section>

@@ -9,6 +9,7 @@ import dashboardRoutes from './routes/dashboard.js'
 import reminderRoutes, { deadlineReminderRoutes } from './routes/reminders.js'
 import { getCurrentProfile } from './controllers/authController.js'
 import { handleChatAI } from './controllers/chatController.js'
+import gmailRoutes from './routes/gmail.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -31,6 +32,7 @@ app.use('/api/v1/deadlines', deadlineRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
 app.use('/api/v1/reminders', reminderRoutes)
 app.use('/api/v1', deadlineReminderRoutes)
+app.use('/api/v1/gmail', gmailRoutes)
 
 app.get('/api/v1/me', requireAuth, getCurrentProfile)
 
