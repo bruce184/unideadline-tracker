@@ -329,10 +329,11 @@ Backend tasks usually include:
 
 ```text
 Route
+Auth middleware (protected endpoints)
 Controller/handler
 Validation
-Supabase query
-Auth/ownership check
+Ownership check
+Model/Supabase table data access
 Standard response format
 Error handling
 Manual API test notes

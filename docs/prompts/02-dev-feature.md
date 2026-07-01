@@ -55,7 +55,9 @@ Follow the layer boundary for the assigned area.
 
 Backend/API:
 
-- Route -> controller/handler -> service/repository if the structure exists.
+- For protected endpoints, follow
+  `route -> auth middleware -> controller -> model -> Supabase`.
+- Add a service layer only for complex business logic that does not belong in a controller or model.
 - Validate body and query params.
 - Authenticate protected endpoints.
 - Enforce user ownership.

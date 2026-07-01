@@ -1,9 +1,15 @@
-export function sendSuccess(res, data = {}, message = 'Success', status = 200) {
-  return res.status(status).json({
+export function sendSuccess(res, data = {}, message = 'Success', status = 200, meta) {
+  const payload = {
     ok: true,
     data,
     message,
-  })
+  }
+
+  if (meta) {
+    payload.meta = meta
+  }
+
+  return res.status(status).json(payload)
 }
 
 export function sendError(

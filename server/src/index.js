@@ -1,14 +1,16 @@
-﻿import express from 'express'
+import 'dotenv/config'
+import express from 'express'
 import cors from 'cors'
-import dotenv from 'dotenv'
 import { requireAuth } from './middleware/auth.js'
-import { supabaseAdmin } from './config/supabase.js'
-import { sendError, sendSuccess } from './utils/responses.js'
+import { sendError } from './utils/responses.js'
 import courseRoutes from './routes/courses.js'
 import deadlineRoutes from './routes/deadlines.js'
 import dashboardRoutes from './routes/dashboard.js'
-import reminderRoutes from './routes/reminders.js'
-dotenv.config()
+import reminderRoutes, { deadlineReminderRoutes } from './routes/reminders.js'
+import { getCurrentProfile } from './controllers/authController.js'
+import { handleChatAI } from './controllers/chatController.js'
+import gmailRoutes from './routes/gmail.js'
+import groupRoutes from './routes/groups.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -19,12 +21,22 @@ app.use(cors({
   credentials: true,
 }))
 
+// CẦN PHẢI ĐẶT THẰNG NÀY ĐẦU TIÊN để đọc được body JSON của các route bên dưới
 app.use(express.json())
+
+// ĐĂNG KÝ TUYẾN ĐƯỜNG CHAT TRỰC TIẾP TẠI ĐÂY
+app.post('/api/v1/chat', requireAuth, handleChatAI)
+
+// Các tuyến đường Router khác
 app.use('/api/v1/courses', courseRoutes)
 app.use('/api/v1/deadlines', deadlineRoutes)
 app.use('/api/v1/dashboard', dashboardRoutes)
 app.use('/api/v1/reminders', reminderRoutes)
-app.use('/api/v1', reminderRoutes)
+app.use('/api/v1', deadlineReminderRoutes)
+app.use('/api/v1/gmail', gmailRoutes)
+app.use('/api/v1/groups', groupRoutes)
+
+app.get('/api/v1/me', requireAuth, getCurrentProfile)
 
 app.get('/api/v1/health', (req, res) => {
   res.json({
@@ -38,30 +50,9 @@ app.get('/api/v1/health', (req, res) => {
   })
 })
 
-app.get('/api/v1/me', requireAuth, async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('profiles')
-    .select('id, email, display_name, created_at, updated_at')
-    .eq('id', req.user.id)
-    .single()
-
-  if (error) {
-    return sendError(
-      res,
-      404,
-      'NOT_FOUND',
-      'Current user profile was not found'
-    )
-  }
-
-  return sendSuccess(res, data, 'Current user loaded')
-})
-
-app.get('/api/v1', (req, res) => {
-  res.json({
-    ok: true,
-    message: 'Welcome to UniDeadline Tracker API',
-  })
+app.use((err, req, res, _next) => {
+  console.error(err)
+  return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Unexpected server error')
 })
 
 app.listen(PORT, () => {

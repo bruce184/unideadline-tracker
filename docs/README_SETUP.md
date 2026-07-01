@@ -219,6 +219,26 @@ Recommended security options:
 [x] Enable automatic RLS
 ```
 
+For the local MVP registration flow, configure Supabase Auth under
+`Authentication -> Providers -> Email`:
+
+```text
+[ ] Confirm email
+```
+
+The current UI signs in immediately after signup. If email confirmation is
+enabled, signup succeeds but the user must confirm the email before login.
+
+Current registration form rules:
+
+- `display_name` is required and limited to 120 characters.
+- Password must contain at least 8 characters, one uppercase letter, and one
+  number.
+- A special character is not required for the MVP.
+
+Supabase may enforce additional password requirements configured for the
+project. Keep those settings compatible with the registration form.
+
 Collect:
 
 ```text
@@ -267,6 +287,11 @@ group_tasks
 
 Run schema SQL in Supabase SQL Editor.
 
+If a local Supabase project already has the older reminder configuration schema
+with `reminders.offsets` or `reminders.enabled`, reset the demo database or drop
+and recreate `public.reminders` before rerunning `database/schema.sql`. The MVP
+schema now stores one reminder row per scheduled `reminder_time`.
+
 ---
 
 ## 11. Seed Data
@@ -278,7 +303,8 @@ Minimum demo data:
 | Demo account | 1 |
 | Courses | 5 |
 | Deadlines | 20 |
-| Pending reminders | 6 |
+| Pending reminder rows | 15 |
+| Deadlines with reminder rows | 5 |
 | Deadlines with `submission_link` | 8 |
 
 Seed data should include:
@@ -289,6 +315,7 @@ Seed data should include:
 - Overdue
 - Submitted
 - High, Medium, Low priority
+- With and without pending reminders
 - With and without `submission_link`
 
 Use fake demo data only.

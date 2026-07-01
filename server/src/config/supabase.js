@@ -1,28 +1,38 @@
 import { createClient } from '@supabase/supabase-js'
-import dotenv from 'dotenv'
-dotenv.config()
 
-const supabaseUrl = process.env.SUPABASE_URL
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+let supabaseClient
+let supabaseAdminClient
 
-if (!supabaseUrl) {
-  throw new Error('Missing SUPABASE_URL')
+function getRequiredEnv(name) {
+  const value = process.env[name]
+  if (!value) {
+    throw new Error(`Missing ${name}`)
+  }
+  return value
 }
 
-if (!supabaseAnonKey) {
-  throw new Error('Missing SUPABASE_ANON_KEY')
+export function getSupabase() {
+  if (!supabaseClient) {
+    supabaseClient = createClient(
+      getRequiredEnv('SUPABASE_URL'),
+      getRequiredEnv('SUPABASE_ANON_KEY')
+    )
+  }
+  return supabaseClient
 }
 
-if (!supabaseServiceRoleKey) {
-  throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY')
+export function getSupabaseAdmin() {
+  if (!supabaseAdminClient) {
+    supabaseAdminClient = createClient(
+      getRequiredEnv('SUPABASE_URL'),
+      getRequiredEnv('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+  }
+  return supabaseAdminClient
 }
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-})

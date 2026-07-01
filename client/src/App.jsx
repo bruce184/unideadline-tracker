@@ -1,23 +1,140 @@
-﻿function App() {
-  return (
-    <main className="min-h-screen bg-slate-50 p-6">
-      <section className="mx-auto max-w-5xl rounded-2xl bg-white p-8 shadow">
-        <h1 className="text-3xl font-bold text-slate-900">
-          UniDeadline Tracker
-        </h1>
-        <p className="mt-3 text-slate-600">
-          Responsive Web App for managing courses, deadlines, status, weekly dashboard, and reminders.
-        </p>
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { configureApiClient, getStoredAccessToken } from './services'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/auth/Login'
+import Register from './pages/auth/Register'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
+import Courses from './pages/courses/Courses'
+import Dashboard from './pages/dashboard/Dashboard'
+import DeadlineDetail from './pages/deadlines/DeadlineDetail'
+import DeadlineForm from './pages/deadlines/DeadlineForm'
+import Deadlines from './pages/deadlines/Deadlines'
+import Tasks from './pages/deadlines/Tasks'
+import AISuggestions from './pages/AI/AISuggestions'
+import RiskAnalysis from './pages/AI/RiskAnalysis'
+import FriendsGroups from './pages/groups/FriendsGroups'
+import Settings from './pages/settings/Settings'
+import Integrations from './pages/settings/Integrations'
 
-        <div className="mt-6 rounded-xl border border-slate-200 p-4">
-          <p className="font-semibold text-slate-800">Frontend is running.</p>
-          <p className="mt-1 text-sm text-slate-500">
-            Next step: implement Auth, Course, Deadline, Dashboard, and Reminder modules.
-          </p>
-        </div>
-      </section>
-    </main>
+function App() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    configureApiClient({
+      getAccessToken: () => getStoredAccessToken(),
+      onUnauthorized: () => navigate('/login'),
+    })
+  }, [navigate])
+
+  return (
+    <Routes>
+      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route
+        path="/dashboard"
+        element={(
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/courses"
+        element={(
+          <ProtectedRoute>
+            <Courses />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines"
+        element={(
+          <ProtectedRoute>
+            <Deadlines />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/tasks"
+        element={(
+          <ProtectedRoute>
+            <Tasks />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines/new"
+        element={(
+          <ProtectedRoute>
+            <DeadlineForm />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines/:id"
+        element={(
+          <ProtectedRoute>
+            <DeadlineDetail />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/deadlines/:id/edit"
+        element={(
+          <ProtectedRoute>
+            <DeadlineForm />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/ai-suggestions"
+        element={(
+          <ProtectedRoute>
+            <AISuggestions />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/risk-analysis"
+        element={(
+          <ProtectedRoute>
+            <RiskAnalysis />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/friends-groups"
+        element={(
+          <ProtectedRoute>
+            <FriendsGroups />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/settings"
+        element={(
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/integrations"
+        element={(
+          <ProtectedRoute>
+            <Integrations />
+          </ProtectedRoute>
+        )}
+      />
+      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+    </Routes>
   )
 }
 
 export default App
+

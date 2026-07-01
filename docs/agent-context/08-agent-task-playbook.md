@@ -24,7 +24,7 @@
 2. Validate input.
 3. Authenticate user.
 4. Enforce ownership.
-5. Query Supabase using schema from `docs/DATABASE_SCHEMA.md`.
+5. Use a model to query Supabase using schema from `docs/DATABASE_SCHEMA.md`.
 6. Return the standard response format.
 7. Test success and failure cases.
 

@@ -258,7 +258,8 @@ server/src/
 +-- config/
 +-- routes/
 +-- controllers/
-+-- services/
++-- models/
++-- services/       # Optional for complex business logic
 +-- middleware/
 +-- utils/
 +-- index.js
@@ -274,6 +275,8 @@ Rules:
 6. Return response shapes from `docs/API_CONTRACT.md`.
 7. Use stable error codes from `docs/API_CONTRACT.md`.
 8. Do not add separate link/upload endpoints in MVP.
+9. Keep Supabase table data access in `models/`; auth token verification
+   belongs in middleware, and controllers must not query Supabase directly.
 
 ---
 
