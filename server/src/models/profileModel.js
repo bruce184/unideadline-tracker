@@ -7,3 +7,13 @@ export function findProfileById(userId) {
     .eq('id', userId)
     .single()
 }
+
+/**
+ * Lấy nhiều profile cùng lúc theo danh sách user_id (dùng cho job gửi reminder)
+ */
+export function findProfilesByIds(userIds) {
+  return getSupabaseAdmin()
+    .from('profiles')
+    .select('id, email, display_name')
+    .in('id', userIds)
+}

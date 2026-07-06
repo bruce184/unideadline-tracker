@@ -5,7 +5,7 @@ export {
   configureApiClient,
   getApiBaseUrl,
 } from './apiClient'
-export { getCurrentProfile, updateProfile } from './authService'
+export { getCurrentProfile } from './authService'
 export {
   createCourse,
   deleteCourse,
@@ -22,6 +22,14 @@ export {
 } from './deadlineService'
 export { getWeeklyDashboard } from './dashboardService'
 export { getHealth } from './healthService'
+export {
+  addGroupProjectMember,
+  createFriend,
+  createGroupProject,
+  createGroupTask,
+  getFriendsGroupsOverview,
+  updateGroupTask,
+} from './groupService'
 export { listReminders } from './reminderService'
 export {
   clearStoredSession,

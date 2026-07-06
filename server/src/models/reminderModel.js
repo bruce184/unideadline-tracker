@@ -58,3 +58,38 @@ export function upsertReminderRows(rows) {
     })
     .select('id, deadline_id, reminder_time, offset_days, channel, sent_status, created_at')
 }
+
+/**
+ * Lấy các reminder đã tới giờ gửi, còn ở trạng thái 'pending', theo channel chỉ định.
+ * Bỏ qua deadline đã 'Submitted' theo đúng quy tắc trong API_CONTRACT.
+ */
+export function findDueReminders(channel, nowIso) {
+  return getSupabaseAdmin()
+    .from('reminders')
+    .select(`
+      id,
+      deadline_id,
+      reminder_time,
+      offset_days,
+      channel,
+      sent_status,
+      deadline:deadlines!inner (
+        id,
+        title,
+        due_date,
+        status,
+        user_id
+      )
+    `)
+    .eq('channel', channel)
+    .eq('sent_status', 'pending')
+    .lte('reminder_time', nowIso)
+    .neq('deadline.status', 'Submitted')
+}
+
+export function markReminderStatus(reminderId, sentStatus) {
+  return getSupabaseAdmin()
+    .from('reminders')
+    .update({ sent_status: sentStatus })
+    .eq('id', reminderId)
+}

@@ -10,6 +10,8 @@ import reminderRoutes, { deadlineReminderRoutes } from './routes/reminders.js'
 import { getCurrentProfile } from './controllers/authController.js'
 import { handleChatAI } from './controllers/chatController.js'
 import gmailRoutes from './routes/gmail.js'
+import { startEmailReminderCron } from './jobs/sendEmailReminders.job.js'
+import groupRoutes from './routes/groups.js'
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -33,6 +35,7 @@ app.use('/api/v1/dashboard', dashboardRoutes)
 app.use('/api/v1/reminders', reminderRoutes)
 app.use('/api/v1', deadlineReminderRoutes)
 app.use('/api/v1/gmail', gmailRoutes)
+app.use('/api/v1/groups', groupRoutes)
 
 app.get('/api/v1/me', requireAuth, getCurrentProfile)
 
@@ -55,4 +58,5 @@ app.use((err, req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`)
+  startEmailReminderCron()
 })

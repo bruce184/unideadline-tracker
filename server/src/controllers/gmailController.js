@@ -109,6 +109,19 @@ Body: ${body.slice(0, 2000)}`
   }
 }
 
+async function fetchGmailAddress(accessToken) {
+  try {
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.emailAddress || null
+  } catch {
+    return null
+  }
+}
+
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 
 /**
@@ -176,7 +189,10 @@ export async function gmailCallback(req, res) {
       throw new Error(tokenPayload.error_description || 'Token exchange failed')
     }
 
+    const gmailAddress = await fetchGmailAddress(tokenPayload.access_token)
+
     const { data: savedConn, error: saveError } = await upsertGmailConnection(userId, {
+      email: gmailAddress,
       access_token: tokenPayload.access_token,
       refresh_token: tokenPayload.refresh_token,
       token_expires_at: new Date(Date.now() + tokenPayload.expires_in * 1000).toISOString(),
@@ -205,6 +221,7 @@ export async function getGmailStatus(req, res) {
   return sendSuccess(res, {
     connected: Boolean(data),
     connectedAt: data?.connected_at || null,
+    email: data?.email || null,
   })
 }
 

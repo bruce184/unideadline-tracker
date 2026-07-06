@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from '../config/supabase.js'
 
-const FIELDS = `user_id, access_token, refresh_token, token_expires_at, connected_at, updated_at`
+const FIELDS = `user_id, email, access_token, refresh_token, token_expires_at, connected_at, updated_at`
 
 export function findGmailConnection(userId) {
   return getSupabaseAdmin()
@@ -8,6 +8,16 @@ export function findGmailConnection(userId) {
     .select(FIELDS)
     .eq('user_id', userId)
     .maybeSingle()
+}
+
+/**
+ * Lấy nhiều connection cùng lúc theo danh sách user_id (dùng cho job gửi reminder)
+ */
+export function findGmailConnectionsByUserIds(userIds) {
+  return getSupabaseAdmin()
+    .from('gmail_connections')
+    .select('user_id, email')
+    .in('user_id', userIds)
 }
 
 export function upsertGmailConnection(userId, payload) {

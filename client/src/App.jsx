@@ -14,6 +14,7 @@ import Deadlines from './pages/deadlines/Deadlines'
 import Tasks from './pages/deadlines/Tasks'
 import AISuggestions from './pages/AI/AISuggestions'
 import RiskAnalysis from './pages/AI/RiskAnalysis'
+import FriendsGroups from './pages/groups/FriendsGroups'
 import Settings from './pages/settings/Settings'
 import Integrations from './pages/settings/Integrations'
 
@@ -103,6 +104,14 @@ function App() {
         element={(
           <ProtectedRoute>
             <RiskAnalysis />
+          </ProtectedRoute>
+        )}
+      />
+      <Route
+        path="/friends-groups"
+        element={(
+          <ProtectedRoute>
+            <FriendsGroups />
           </ProtectedRoute>
         )}
       />

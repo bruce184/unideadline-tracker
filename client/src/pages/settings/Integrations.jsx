@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
 import {
@@ -23,11 +23,22 @@ export default function Integrations() {
   const [disconnecting, setDisconnecting] = useState(false)
 
   const [toast, setToast] = useState(null)
+  const toastTimerRef = useRef(null)
 
-  const showToast = (message, type = 'success') => {
+  const showToast = useCallback((message, type = 'success') => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current)
+    }
+
     setToast({ message, type })
-    setTimeout(() => setToast(null), 4000)
-  }
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 4000)
+  }, [])
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current)
+    }
+  }, [])
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -44,22 +55,36 @@ export default function Integrations() {
   }, [])
 
   useEffect(() => {
-    fetchStatus()
+    const timeoutId = window.setTimeout(() => {
+      fetchStatus()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [fetchStatus])
 
   // Đọc query param sau khi OAuth callback redirect về
   useEffect(() => {
     const gmailParam = searchParams.get('gmail')
-    if (gmailParam === 'connected') {
-      showToast('Kết nối Gmail thành công!')
-      setConnected(true)
-      fetchStatus()
-      setSearchParams({})
-    } else if (gmailParam === 'error') {
-      showToast('Kết nối Gmail thất bại. Vui lòng thử lại.', 'error')
-      setSearchParams({})
+    if (gmailParam !== 'connected' && gmailParam !== 'error') {
+      return undefined
     }
-  }, [searchParams, setSearchParams, fetchStatus])
+
+    const handleOAuthCallback = () => {
+      if (gmailParam === 'connected') {
+        showToast('Kết nối Gmail thành công!')
+        setConnected(true)
+        fetchStatus()
+        setSearchParams({})
+      } else if (gmailParam === 'error') {
+        showToast('Kết nối Gmail thất bại. Vui lòng thử lại.', 'error')
+        setSearchParams({})
+      }
+    }
+
+    const timeoutId = window.setTimeout(handleOAuthCallback, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [searchParams, setSearchParams, fetchStatus, showToast])
 
   const handleConnect = async () => {
     try {
