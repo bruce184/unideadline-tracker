@@ -157,8 +157,26 @@ export async function signInWithPassword({ email, password }) {
   return session
 }
 
-export function signOut() {
-  clearStoredSession()
+export async function signOut() {
+  // MAJ-02 fix: Revoke the token on Supabase's side so it cannot be reused
+  // even if someone captured it before logout.
+  try {
+    const session = getStoredSession()
+    if (session?.access_token && hasSupabaseAuthConfig()) {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+    }
+  } catch {
+    // Logout failure should never block the UI; still clear local session.
+  } finally {
+    clearStoredSession()
+  }
 }
 
 export async function signUp({ email, password, data }) {

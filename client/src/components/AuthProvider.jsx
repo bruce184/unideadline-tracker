@@ -40,7 +40,7 @@ export default function AuthProvider({ children }) {
   }
 
   const logout = async () => {
-    signOut()
+    await signOut()
     setUser(null)
   }
 

@@ -1,6 +1,32 @@
 import { getSupabaseAdmin } from '../config/supabase.js'
 
-export function findOwnedReminders({ userId, filters, from, to }) {
+/**
+ * BUG-02 fix: The old code used `.eq('deadline.user_id', userId)` which is an
+ * embedded filter on a related table. When using the service-role key (which
+ * bypasses RLS), this filter is NOT guaranteed to work — it can silently return
+ * reminders belonging to other users.
+ *
+ * Fix: First collect deadline_ids that belong to the user, then filter reminders
+ * by those ids. This makes ownership check explicit and safe.
+ */
+export async function findOwnedReminders({ userId, filters, from, to }) {
+  // Step 1: get deadline IDs owned by this user
+  const { data: deadlines, error: deadlineError } = await getSupabaseAdmin()
+    .from('deadlines')
+    .select('id')
+    .eq('user_id', userId)
+
+  if (deadlineError) {
+    return { data: null, error: deadlineError, count: 0 }
+  }
+
+  const deadlineIds = (deadlines || []).map((d) => d.id)
+
+  if (deadlineIds.length === 0) {
+    return { data: [], error: null, count: 0 }
+  }
+
+  // Step 2: query reminders restricted to those deadline IDs
   let query = getSupabaseAdmin()
     .from('reminders')
     .select(`
@@ -17,7 +43,7 @@ export function findOwnedReminders({ userId, filters, from, to }) {
         due_date
       )
     `, { count: 'exact' })
-    .eq('deadline.user_id', userId)
+    .in('deadline_id', deadlineIds)
 
   if (filters.sent_status) {
     query = query.eq('sent_status', filters.sent_status)
@@ -61,10 +87,14 @@ export function upsertReminderRows(rows) {
 
 /**
  * Lấy các reminder đã tới giờ gửi, còn ở trạng thái 'pending', theo channel chỉ định.
- * Bỏ qua deadline đã 'Submitted' theo đúng quy tắc trong API_CONTRACT.
+ *
+ * MAJ-04 fix: The old code used `.neq('deadline.status', 'Submitted')` which is an
+ * embedded filter on a related table — unreliable with the service-role key.
+ * Fix: Fetch all pending due reminders, then filter out Submitted ones in JS.
+ * The result set is small (due reminders in a 10-min window), so this is safe.
  */
-export function findDueReminders(channel, nowIso) {
-  return getSupabaseAdmin()
+export async function findDueReminders(channel, nowIso) {
+  const { data, error } = await getSupabaseAdmin()
     .from('reminders')
     .select(`
       id,
@@ -84,7 +114,17 @@ export function findDueReminders(channel, nowIso) {
     .eq('channel', channel)
     .eq('sent_status', 'pending')
     .lte('reminder_time', nowIso)
-    .neq('deadline.status', 'Submitted')
+
+  if (error) {
+    return { data: null, error }
+  }
+
+  // Filter out reminders for already-Submitted deadlines in application layer
+  const filtered = (data || []).filter(
+    (r) => r.deadline?.status !== 'Submitted'
+  )
+
+  return { data: filtered, error: null }
 }
 
 export function markReminderStatus(reminderId, sentStatus) {

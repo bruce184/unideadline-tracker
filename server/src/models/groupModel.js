@@ -106,8 +106,13 @@ export function createGroupTaskRecord(payload) {
     .single()
 }
 
-export function findOwnedGroupTaskById(taskId, userId) {
-  return getSupabaseAdmin()
+/**
+ * MAJ-01 fix: The old code used `.eq('project.owner_id', userId)` which is
+ * an embedded filter on a related table — unreliable with the service-role key.
+ * Fix: Fetch the task with its project, then verify ownership in application code.
+ */
+export async function findOwnedGroupTaskById(taskId, userId) {
+  const { data, error } = await getSupabaseAdmin()
     .from('group_tasks')
     .select(`
       ${TASK_FIELDS},
@@ -117,8 +122,18 @@ export function findOwnedGroupTaskById(taskId, userId) {
       )
     `)
     .eq('id', taskId)
-    .eq('project.owner_id', userId)
     .single()
+
+  if (error || !data) {
+    return { data: null, error: error || new Error('Task not found') }
+  }
+
+  // Explicit ownership check in application layer
+  if (data.project?.owner_id !== userId) {
+    return { data: null, error: new Error('Unauthorized') }
+  }
+
+  return { data, error: null }
 }
 
 export function updateGroupTaskRecord(taskId, updates) {

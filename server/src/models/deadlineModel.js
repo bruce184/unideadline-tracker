@@ -34,15 +34,15 @@ export function findOwnedDeadlines({ userId, filters, sortBy, sortOrder, from, t
   }
 
   if (filters.status === 'Overdue') {
+    // Overdue = past due date AND not yet submitted
     query = query
       .lt('due_date', now)
       .neq('status', 'Submitted')
   } else if (filters.status) {
+    // Filter by exact status value only — do NOT add a date constraint.
+    // A deadline can be "In Progress" even after its due date passes
+    // until the user explicitly marks it "Submitted".
     query = query.eq('status', filters.status)
-
-    if (filters.status !== 'Submitted') {
-      query = query.gte('due_date', now)
-    }
   }
 
   if (filters.priority) {

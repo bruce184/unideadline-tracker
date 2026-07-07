@@ -49,7 +49,7 @@ export default function DeadlineForm() {
       try {
         setFetchLoading(true)
         setError('')
-        const courseData = await listCourses()
+        const courseData = await listCourses({ limit: 100 })
         setCourses(courseData.data || [])
 
         if (isEdit) {
@@ -102,10 +102,19 @@ export default function DeadlineForm() {
       return
     }
 
+    const isoDueDate = toIsoDateTime(form.due_date)
+
+    // MAJ-06 fix: toIsoDateTime returns '' for invalid dates — catch it here
+    // to show a meaningful error instead of letting the API return "Due date is required"
+    if (!isoDueDate) {
+      setError('Hạn nộp không hợp lệ. Vui lòng chọn lại.')
+      return
+    }
+
     const payload = {
       ...form,
       title: form.title.trim(),
-      due_date: toIsoDateTime(form.due_date),
+      due_date: isoDueDate,
       description: form.description.trim(),
       submission_link: form.submission_link.trim(),
     }
