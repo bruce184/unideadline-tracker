@@ -198,6 +198,21 @@ CLIENT_ORIGIN=http://localhost:5173
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+GEMINI_API_KEY=your_gemini_api_key_here
+
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+GOOGLE_REDIRECT_URI=http://localhost:3001/api/v1/gmail/callback
+GOOGLE_OAUTH_STATE_SECRET=your_random_oauth_state_secret
+
+EMAIL_REMINDER_ENABLED=false
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_USER=
+EMAIL_PASS=
+EMAIL_FROM=
+EMAIL_REMINDER_TRIGGER_TOKEN=
 ```
 
 Security:
@@ -273,6 +288,11 @@ profiles
 courses
 deadlines
 reminders
+gmail_connections
+friendships
+group_projects
+group_project_members
+group_tasks
 ```
 
 Do not create in MVP:
@@ -281,8 +301,6 @@ Do not create in MVP:
 deadline_links
 file_uploads
 projects
-project_members
-group_tasks
 ```
 
 Run schema SQL in Supabase SQL Editor.
@@ -413,6 +431,8 @@ Supabase:
 [ ] Status update works
 [ ] Search/filter works
 [ ] Reminder UI/data is visible
+[ ] Gmail integration page can show status/import flow when env is configured
+[ ] Friends/groups page can create owner-managed project tasks
 [ ] Deadline submission link is visible/clickable when present
 [ ] Mobile width is usable
 ```
@@ -428,8 +448,10 @@ Recommended demo flow:
 6. Update status
 7. Filter/search deadlines
 8. Show reminder/near-due alert
-9. Open submission link
-10. Show responsive layout
+9. Open Gmail Integrations and import deadlines if Gmail env is configured
+10. Show friends/groups owner-managed project tracking
+11. Open submission link
+12. Show responsive layout
 ```
 
 ---

@@ -35,17 +35,36 @@ function offsetLabel(offsetDays) {
   return `Còn ${offsetDays} ngày nữa là tới hạn`
 }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[char])
+}
+
+function normalizeSubjectText(value) {
+  return String(value ?? 'Deadline')
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim() || 'Deadline'
+}
+
 /**
  * Gửi email nhắc deadline cho 1 user
  */
 export async function sendReminderEmail({ to, displayName, deadlineTitle, dueDate, offsetDays }) {
-  const greeting = displayName ? `Chào ${displayName},` : 'Xin chào,'
+  const subjectTitle = normalizeSubjectText(deadlineTitle)
+  const safeDeadlineTitle = escapeHtml(subjectTitle)
+  const safeGreeting = displayName ? `Chào ${escapeHtml(displayName)},` : 'Xin chào,'
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 480px; color: #1f2937;">
-      <p>${greeting}</p>
+      <p>${safeGreeting}</p>
       <h2 style="color:#d97706; margin-bottom: 4px;">⏰ ${offsetLabel(offsetDays)}</h2>
-      <p style="font-size: 16px;"><strong>${deadlineTitle}</strong></p>
+      <p style="font-size: 16px;"><strong>${safeDeadlineTitle}</strong></p>
       <p>Hạn nộp: <strong>${formatDueDate(dueDate)}</strong></p>
       <p style="margin-top: 16px; font-size: 13px; color: #6b7280;">
         Email này được gửi tự động từ UniDeadline Tracker. Đăng nhập ứng dụng để xem chi tiết hoặc tắt nhắc nhở.
@@ -56,7 +75,7 @@ export async function sendReminderEmail({ to, displayName, deadlineTitle, dueDat
   return getTransporter().sendMail({
     from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
     to,
-    subject: `[Nhắc hạn] ${deadlineTitle}`,
+    subject: `[Nhắc hạn] ${subjectTitle}`,
     html,
   })
 }

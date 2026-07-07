@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai'
-import { getSupabase, getSupabaseAdmin } from '../config/supabase.js'
+import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import { signState, verifyState } from '../utils/gmailOAuthState.js'
 import {
@@ -14,6 +14,15 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly'
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173'
+
+function isGmailOAuthConfigured() {
+  return Boolean(
+    process.env.GOOGLE_CLIENT_ID
+      && process.env.GOOGLE_CLIENT_SECRET
+      && process.env.GOOGLE_REDIRECT_URI
+      && process.env.GOOGLE_OAUTH_STATE_SECRET
+  )
+}
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -124,21 +133,9 @@ async function fetchGmailAddress(accessToken) {
 
 // ─── ROUTES ───────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/v1/gmail/auth?access_token=...
- * Full-page redirect → không có Authorization header → access_token qua query param
- */
 export async function startGmailAuth(req, res) {
-  const accessToken = req.query.access_token
-
-  if (!accessToken) {
-    return sendError(res, 401, 'UNAUTHORIZED', 'Missing access token')
-  }
-
-  const { data, error } = await getSupabase().auth.getUser(accessToken)
-
-  if (error || !data?.user) {
-    return sendError(res, 401, 'UNAUTHORIZED', 'Invalid access token')
+  if (!isGmailOAuthConfigured()) {
+    return sendError(res, 500, 'GMAIL_CONFIG_MISSING', 'Gmail OAuth is not configured')
   }
 
   const params = new URLSearchParams({
@@ -148,10 +145,12 @@ export async function startGmailAuth(req, res) {
     scope: GMAIL_SCOPE,
     access_type: 'offline',
     prompt: 'consent',
-    state: signState(data.user.id),
+    state: signState(req.user.id),
   })
 
-  return res.redirect(`${GOOGLE_AUTH_URL}?${params.toString()}`)
+  return sendSuccess(res, {
+    authUrl: `${GOOGLE_AUTH_URL}?${params.toString()}`,
+  })
 }
 
 /**
@@ -159,6 +158,10 @@ export async function startGmailAuth(req, res) {
  */
 export async function gmailCallback(req, res) {
   const { code, state, error: googleError } = req.query
+
+  if (!isGmailOAuthConfigured()) {
+    return res.redirect(`${CLIENT_ORIGIN}/integrations?gmail=error`)
+  }
 
   if (googleError) {
     return res.redirect(`${CLIENT_ORIGIN}/integrations?gmail=error`)
@@ -256,6 +259,16 @@ export async function importFromGmail(req, res) {
     return sendError(res, 401, 'GMAIL_NOT_CONNECTED', 'Chưa kết nối Gmail')
   }
 
+  const defaultCourseId = await getFirstCourseId(userId)
+  if (!defaultCourseId) {
+    return sendError(
+      res,
+      400,
+      'COURSE_REQUIRED',
+      'Create at least one course before importing deadlines from Gmail'
+    )
+  }
+
   // Timestamp để filter email (Gmail dùng Unix timestamp tính bằng giây)
   const afterTimestamp = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000)
 
@@ -279,9 +292,6 @@ export async function importFromGmail(req, res) {
 
   let imported = 0
   let skipped = 0
-
-  // Lấy course_id đầu tiên của user (course_id NOT NULL trong schema)
-  const defaultCourseId = await getFirstCourseId(userId)
 
   for (const { id: messageId } of messages) {
     try {

@@ -10,8 +10,7 @@ import {
 
 const router = express.Router()
 
-// auth + callback không dùng requireAuth vì là full-page redirect từ Google
-router.get('/auth', startGmailAuth)
+router.post('/auth-url', requireAuth, startGmailAuth)
 router.get('/callback', gmailCallback)
 
 router.get('/status', requireAuth, getGmailStatus)

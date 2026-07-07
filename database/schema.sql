@@ -313,6 +313,9 @@ on public.friendships(requester_id);
 create index if not exists idx_group_projects_owner_id
 on public.group_projects(owner_id);
 
+create unique index if not exists uq_group_project_members_project_email
+on public.group_project_members(project_id, lower(trim(email)));
+
 create index if not exists idx_group_project_members_project_id
 on public.group_project_members(project_id);
 

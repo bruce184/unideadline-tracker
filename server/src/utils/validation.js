@@ -4,6 +4,8 @@
 
 import { isValidIsoDateTime } from './query.js'
 
+export { isValidIsoDateTime } from './query.js'
+
 export const ALLOWED_STATUS = ['Not Started', 'In Progress', 'Submitted', 'Overdue']
 export const USER_SELECTABLE_STATUS = ['Not Started', 'In Progress', 'Submitted']
 export const ALLOWED_PRIORITY = ['High', 'Medium', 'Low']

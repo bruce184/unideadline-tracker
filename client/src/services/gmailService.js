@@ -1,5 +1,4 @@
-import { apiRequest, getApiBaseUrl } from './apiClient'
-import { getStoredAccessToken } from './supabaseAuthService'
+import { apiRequest } from './apiClient'
 
 export async function getGmailStatus(options = {}) {
   const response = await apiRequest('/gmail/status', options)
@@ -7,10 +6,10 @@ export async function getGmailStatus(options = {}) {
 }
 
 export async function connectGmail() {
-  const accessToken = await getStoredAccessToken()
-  if (!accessToken) throw new Error('Vui lòng đăng nhập lại')
-  const url = `${getApiBaseUrl()}/gmail/auth?access_token=${encodeURIComponent(accessToken)}`
-  window.location.href = url
+  const response = await apiRequest('/gmail/auth-url', {
+    method: 'POST',
+  })
+  window.location.href = response.data.authUrl
 }
 
 export async function importFromGmail(days, options = {}) {

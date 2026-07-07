@@ -58,6 +58,13 @@ export function createProjectRecord(payload) {
     .single()
 }
 
+export function deleteProjectRecord(projectId) {
+  return getSupabaseAdmin()
+    .from('group_projects')
+    .delete()
+    .eq('id', projectId)
+}
+
 export function createProjectMemberRecord(payload) {
   return getSupabaseAdmin()
     .from('group_project_members')

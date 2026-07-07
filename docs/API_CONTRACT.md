@@ -619,10 +619,107 @@ Rules:
 - Backend converts offsets to reminder rows.
 - If disabled, remove pending reminders for that deadline.
 - Submitted deadlines should not create new reminders.
+- Email reminders require SMTP env plus `EMAIL_REMINDER_ENABLED=true`.
+- Manual email job trigger is dev/demo-only and requires `EMAIL_REMINDER_TRIGGER_TOKEN`.
+
+### 14.3. `POST /reminders/process-email-now`
+
+Dev/demo-only manual email reminder trigger.
+
+Headers:
+
+| Header | Rule |
+|---|---|
+| `Authorization` | Bearer Supabase access token |
+| `x-dev-job-token` | Must match `EMAIL_REMINDER_TRIGGER_TOKEN` |
+
+This route is not registered in production, and is not registered in development unless `EMAIL_REMINDER_TRIGGER_TOKEN` is set.
 
 ---
 
-## 15. Ownership and Security
+## 15. Gmail Integration
+
+### 15.1. `POST /gmail/auth-url`
+
+Returns the Google OAuth URL for the current authenticated user.
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "authUrl": "https://accounts.google.com/o/oauth2/v2/auth?..."
+  },
+  "message": "Success"
+}
+```
+
+### 15.2. `GET /gmail/callback`
+
+Google OAuth redirect endpoint. This endpoint is public because Google redirects to it after consent. It verifies the signed OAuth state and stores the Gmail connection.
+
+### 15.3. `GET /gmail/status`
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "connected": true,
+    "connectedAt": "2026-07-06T10:00:00.000Z",
+    "email": "student@example.com"
+  },
+  "message": "Success"
+}
+```
+
+### 15.4. `POST /gmail/import`
+
+Request:
+
+```json
+{
+  "days": 7
+}
+```
+
+Rules:
+
+- `days` supports `7` or `30`; any other value falls back to `7`.
+- The user must connect Gmail first.
+- The user must have at least one course before import because imported deadlines need a `course_id`.
+- Imported Gmail messages are deduplicated with `deadlines.gmail_message_id`.
+
+### 15.5. `POST /gmail/disconnect`
+
+Deletes the current user's Gmail connection.
+
+---
+
+## 16. Friends and Group Tracking
+
+These endpoints support owner-managed group project tracking. They are not real-time collaboration endpoints; project members do not automatically get cross-account access.
+
+| Method | Endpoint | Auth | Purpose |
+|---|---|---|---|
+| GET | `/groups/overview` | Yes | List current user's friends and owned group projects |
+| POST | `/groups/friends` | Yes | Add a friend by email |
+| POST | `/groups/projects` | Yes | Create an owned group project |
+| POST | `/groups/projects/:id/members` | Yes | Add a member to an owned project |
+| POST | `/groups/projects/:id/tasks` | Yes | Create a task in an owned project |
+| PATCH | `/groups/tasks/:id` | Yes | Update status/progress note of an owned project task |
+
+Rules:
+
+- Friends are unique by requester and email.
+- Project members are unique by project and email.
+- Only the project owner can manage project members and tasks.
+
+---
+
+## 17. Ownership and Security
 
 Backend must:
 
@@ -636,7 +733,7 @@ Backend must:
 
 ---
 
-## 16. Frontend Integration Rules
+## 18. Frontend Integration Rules
 
 Frontend should:
 
@@ -649,12 +746,12 @@ Frontend should:
 
 ---
 
-## 17. MVP Boundary
+## 19. MVP Boundary
 
 Do not add these unless approved:
 
-- Group collaboration
-- Group task assignment
+- Real-time multi-user collaboration
+- Cross-account group member permissions
 - Public member progress tracking
 - Native mobile app APIs
 - Full LMS/Outlook production integration

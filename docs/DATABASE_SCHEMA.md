@@ -7,6 +7,7 @@ This file is the Supabase PostgreSQL schema source of truth for the UniDeadline 
 MVP decision:
 
 - Core tables: `profiles`, `courses`, `deadlines`, `reminders`.
+- Implemented extension tables: `gmail_connections`, `friendships`, `group_projects`, `group_project_members`, `group_tasks`.
 - Submission/document URL is stored in `deadlines.submission_link`.
 - Do not create `deadline_links` in MVP.
 - Multiple links and file upload are future scope.
@@ -43,9 +44,11 @@ create extension if not exists pgcrypto;
 3. Each deadline belongs to one user.
 4. Each deadline must belong to one course owned by the same user.
 5. Reminder records belong to a deadline.
-6. Users can only access their own courses, deadlines, and reminders.
-7. Backend must not trust `user_id` from request body.
-8. Backend must set `user_id` from the authenticated Supabase user.
+6. Gmail connections belong to one user.
+7. Group projects are owner-managed; members and tasks belong to an owned group project.
+8. Users can only access their own courses, deadlines, reminders, Gmail connection, friends, and owned group projects.
+9. Backend must not trust `user_id` from request body.
+10. Backend must set owner/user identifiers from the authenticated Supabase user.
 
 Ownership path:
 
@@ -55,6 +58,11 @@ auth.users
   -> courses
   -> deadlines
   -> reminders
+  -> gmail_connections
+  -> friendships
+  -> group_projects
+       -> group_project_members
+       -> group_tasks
 ```
 
 ---
@@ -67,6 +75,11 @@ auth.users
 | `courses` | Courses created by each user |
 | `deadlines` | Academic deadlines/tasks for a course, including `submission_link` |
 | `reminders` | Reminder rows calculated from deadline due date |
+| `gmail_connections` | Current user's Gmail OAuth tokens and connected email |
+| `friendships` | Owner-managed friend list by email |
+| `group_projects` | Owner-managed group projects |
+| `group_project_members` | Members assigned to an owned group project |
+| `group_tasks` | Tasks and progress notes inside an owned group project |
 
 ---
 
@@ -514,7 +527,29 @@ using (
 
 ---
 
-## 13. Suggested SQL Files
+## 13. Implemented Extension Tables
+
+The current source includes Gmail sync and owner-managed group tracking tables in `database/schema.sql`.
+
+Gmail:
+
+- `deadlines.gmail_message_id` stores the source Gmail message id for dedupe.
+- `gmail_connections` stores the current user's connected Gmail address and OAuth tokens.
+- `uq_deadlines_user_gmail_message` prevents importing the same Gmail message twice for one user.
+
+Groups:
+
+- `friendships` stores a user's friend list by email.
+- `group_projects` stores projects owned by a user.
+- `group_project_members` stores members of an owned project.
+- `group_tasks` stores task assignment, due date, status, and progress note.
+- `uq_group_project_members_project_email` prevents duplicate project members by email.
+
+Group tracking is owner-managed. A listed member does not automatically get cross-account access to the project.
+
+---
+
+## 14. Suggested SQL Files
 
 Baseline setup should create:
 
@@ -536,7 +571,7 @@ Recommended order in `schema.sql`:
 
 ---
 
-## 14. Demo Seed Data
+## 15. Demo Seed Data
 
 Minimum demo data:
 
@@ -566,7 +601,7 @@ Do not use real private student data.
 
 ---
 
-## 15. Future Scope Tables
+## 16. Future Scope Tables
 
 Do not create these in MVP unless approved:
 
@@ -574,8 +609,6 @@ Do not create these in MVP unless approved:
 deadline_links
 file_uploads
 projects
-project_members
-group_tasks
 invitations
 lms_integrations
 calendar_integrations

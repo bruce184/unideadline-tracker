@@ -5,6 +5,7 @@ import {
   createGroupTaskRecord,
   createProjectMemberRecord,
   createProjectRecord,
+  deleteProjectRecord,
   findFriendProfileByEmail,
   findOwnedFriends,
   findOwnedProjectById,
@@ -132,13 +133,18 @@ export async function createProject(req, res) {
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Project could not be created')
   }
 
-  await createProjectMemberRecord({
+  const { error: memberError } = await createProjectMemberRecord({
     project_id: project.id,
     user_id: req.user.id,
     email: req.user.email,
     display_name: req.user.user_metadata?.display_name || req.user.email,
     role: 'owner',
   })
+
+  if (memberError) {
+    await deleteProjectRecord(project.id)
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Project owner member could not be created')
+  }
 
   return sendSuccess(res, project, 'Project created', 201)
 }
@@ -166,6 +172,9 @@ export async function addProjectMember(req, res) {
   })
 
   if (error) {
+    if (error.code === '23505') {
+      return sendError(res, 409, 'CONFLICT', 'Member already exists in this project')
+    }
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Member could not be added')
   }
 
