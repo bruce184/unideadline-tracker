@@ -71,6 +71,9 @@ export async function getFriendsGroupsOverview(req, res) {
   ])
 
   if (friendsResult.error || projectsResult.error) {
+    // Temporary debug: log actual Supabase error to server terminal
+    console.error('[getFriendsGroupsOverview] friendsResult.error:', JSON.stringify(friendsResult.error))
+    console.error('[getFriendsGroupsOverview] projectsResult.error:', JSON.stringify(projectsResult.error))
     return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load friends and groups')
   }
 
