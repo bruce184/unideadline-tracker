@@ -472,6 +472,12 @@ on public.deadlines for delete
 using (auth.uid() = user_id);
 ```
 
+Current implementation note:
+
+- Deadline RLS policies enforce row ownership through `deadlines.user_id`.
+- API controllers must also validate that `deadlines.course_id` belongs to the
+  authenticated user before creating or updating a deadline.
+
 ### 12.4. Reminders
 
 Reminder ownership is checked through the related deadline.

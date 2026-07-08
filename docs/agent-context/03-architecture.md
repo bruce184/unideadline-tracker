@@ -40,9 +40,10 @@ React UI
 
 1. Schema source of truth is `docs/DATABASE_SCHEMA.md`.
 2. Core tables are `profiles`, `courses`, `deadlines`, and `reminders`.
-3. Enable RLS on app tables.
-4. Users can only access their own data.
-5. Use fake demo seed data only.
+3. Implemented extension tables include Gmail connection and owner-managed group tracking tables.
+4. Enable RLS on app tables.
+5. Users can only access their own data.
+6. Use fake demo seed data only.
 
 ## Change Control
 

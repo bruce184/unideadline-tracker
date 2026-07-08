@@ -1,6 +1,6 @@
 # UniDeadline Tracker
 
-UniDeadline Tracker is a responsive web app that helps university students manage courses, academic deadlines, submission status, weekly workload, reminders, and submission links in one place.
+UniDeadline Tracker is a responsive web app that helps university students manage courses, academic deadlines, submission status, weekly workload, reminders, Gmail-imported deadlines, AI suggestions, owner-managed group tasks, and submission links in one place.
 
 The project is built as a student MVP with a local-demo-first strategy. Online deployment is optional if the core demo is stable.
 
@@ -28,10 +28,15 @@ The MVP includes:
 - Responsive Web App
 - Basic In-app Reminder
 - Submission Link Storage
+- AI Suggestions Chat
+- Gmail OAuth Sync and Deadline Import
+- Optional Email Reminder
+- Owner-managed Friends and Group Task Tracking
 
 Out-of-scope unless approved:
 
-- Group collaboration
+- Real-time multi-user collaboration
+- Cross-account group member permissions
 - Native mobile app
 - Full LMS/Outlook production integration
 - Long-term AI risk prediction
@@ -131,6 +136,18 @@ CLIENT_ORIGIN=http://localhost:5173
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+GEMINI_API_KEY=your_google_ai_studio_api_key_here
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+GOOGLE_REDIRECT_URI=http://localhost:3001/api/v1/gmail/callback
+GOOGLE_OAUTH_STATE_SECRET=your_random_oauth_state_secret
+EMAIL_REMINDER_ENABLED=false
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_USER=
+EMAIL_PASS=
+EMAIL_FROM=
+EMAIL_REMINDER_TRIGGER_TOKEN=
 ```
 
 `SUPABASE_SERVICE_ROLE_KEY` must stay server-side only.

@@ -66,7 +66,8 @@ Do not add unless explicitly assigned and documented:
 - File upload APIs
 - Multiple link APIs
 - `deadline_links`
-- Group collaboration
+- Real-time multi-user collaboration
+- Cross-account group member permissions
 - Native mobile app features
 
 Never commit:

@@ -22,6 +22,16 @@ deadlines
 reminders
 ```
 
+Implemented extension tables:
+
+```text
+gmail_connections
+friendships
+group_projects
+group_project_members
+group_tasks
+```
+
 ## Core Ownership
 
 ```text
@@ -30,6 +40,11 @@ auth.users
   -> courses
   -> deadlines
   -> reminders
+  -> gmail_connections
+  -> friendships
+  -> group_projects
+       -> group_project_members
+       -> group_tasks
 ```
 
 ## Required Data Rule
@@ -43,6 +58,17 @@ The only MVP submission/document link field is:
 ```text
 deadlines.submission_link
 ```
+
+## Gmail Import Rule
+
+`POST /gmail/import` requires the selected `course_id` in addition to `days`.
+The backend must verify that the selected course belongs to the authenticated
+user before creating imported deadlines.
+
+## Group Tracking Rule
+
+Friends and group projects are owner-managed demo features. Listed project
+members do not automatically receive cross-account access.
 
 ## API or Schema Change Checklist
 

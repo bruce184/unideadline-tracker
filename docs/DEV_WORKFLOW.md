@@ -256,13 +256,15 @@ Search & Filter
 Responsive Web App
 Basic In-app Reminder
 Submission Link Storage
+AI Suggestions Chat
+Gmail OAuth Sync and Deadline Import
+Optional Email Reminder
+Owner-managed Friends and Group Task Tracking
 ```
 
 Could-have if core MVP is stable:
 
 ```text
-Email Reminder
-Import PoC
 Rule-based Priority Suggestion
 Dark Mode
 ```
@@ -270,7 +272,8 @@ Dark Mode
 Out of scope unless approved:
 
 ```text
-Group collaboration
+Real-time multi-user collaboration
+Cross-account group member permissions
 Native mobile app
 Full LMS/Outlook production integration
 Long-term AI risk prediction

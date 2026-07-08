@@ -443,8 +443,9 @@ AI/Gmail demo prerequisites:
 - Use a Google AI Studio Gemini API key for `GEMINI_API_KEY` (it normally starts with `AIza`).
 - Google OAuth redirect URI must exactly match `http://localhost:3001/api/v1/gmail/callback`.
 - The demo user must have at least one course before importing from Gmail.
+- The Gmail Integrations page requires selecting the target course before import.
 - The Gmail inbox should contain at least one recent email with an explicit deadline, for example "Assignment 2 is due on July 20, 2026 at 23:59".
-- Gmail import attaches new deadlines to the user's first course and skips duplicate Gmail messages.
+- Gmail import attaches new deadlines to the selected course and skips duplicate Gmail messages.
 
 Recommended demo flow:
 
@@ -457,7 +458,7 @@ Recommended demo flow:
 6. Update status
 7. Filter/search deadlines
 8. Show reminder/near-due alert
-9. Open Gmail Integrations and import deadlines if Gmail env is configured
+9. Open Gmail Integrations, select a target course, and import deadlines if Gmail env is configured
 10. Show friends/groups owner-managed project tracking
 11. Open submission link
 12. Show responsive layout

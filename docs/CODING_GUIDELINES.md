@@ -365,8 +365,8 @@ http://localhost:3001/api/v1/health
 
 Do not implement unless approved:
 
-- Group collaboration
-- Group task assignment
+- Real-time multi-user collaboration
+- Cross-account group member permissions
 - Native mobile app
 - Full LMS/Outlook production integration
 - Long-term AI risk prediction

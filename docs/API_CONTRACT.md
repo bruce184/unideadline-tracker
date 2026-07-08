@@ -52,6 +52,7 @@ Content-Type: application/json
 Public endpoints:
 
 - `GET /health`
+- `GET /gmail/callback` (Google OAuth redirect callback)
 
 All other endpoints are protected.
 
@@ -111,14 +112,25 @@ Error response:
 
 | HTTP | Code | Meaning |
 |---:|---|---|
+| 400 | `BAD_REQUEST` | Required chat message is missing |
 | 400 | `VALIDATION_ERROR` | Invalid request body |
 | 400 | `INVALID_QUERY` | Invalid query/filter/sort/date range |
 | 400 | `INVALID_URL` | `submission_link` is not a valid HTTP/HTTPS URL |
+| 400 | `COURSE_REQUIRED` | Gmail import requires a selected course |
 | 401 | `UNAUTHORIZED` | Missing/invalid/expired token |
+| 401 | `GMAIL_NOT_CONNECTED` | Current user has not connected Gmail |
+| 403 | `FORBIDDEN` | Manual job token is invalid |
 | 404 | `NOT_FOUND` | Resource does not exist or does not belong to current user |
+| 404 | `COURSE_NOT_FOUND` | Selected Gmail import course was not found or not owned |
 | 409 | `CONFLICT` | Duplicate or conflicting data |
 | 409 | `COURSE_HAS_DEADLINES` | Course cannot be deleted because it still has deadlines |
+| 500 | `AI_CONFIG_MISSING` | Gemini AI key is not configured |
+| 500 | `AI_CONFIG_INVALID` | Gemini AI key does not look like a Google AI Studio key |
+| 500 | `AI_SERVICE_ERROR` | AI provider call failed |
+| 500 | `GMAIL_CONFIG_MISSING` | Gmail OAuth env is not configured |
 | 500 | `INTERNAL_SERVER_ERROR` | Unexpected server/database error |
+| 502 | `AI_EMPTY_RESPONSE` | AI provider returned an empty response |
+| 502 | `GMAIL_API_ERROR` | Gmail API request failed |
 
 For private resources, return `404 NOT_FOUND` when the resource exists but does not belong to the current user.
 
@@ -298,6 +310,7 @@ Backend converts offsets into reminder rows.
 |---|---|---|---|
 | GET | `/health` | No | Backend health check |
 | GET | `/me` | Yes | Get current profile |
+| POST | `/chat` | Yes | Ask AI assistant using user-provided context/history |
 | GET | `/courses` | Yes | List current user's courses |
 | POST | `/courses` | Yes | Create course |
 | PATCH | `/courses/:id` | Yes | Update course |
@@ -360,6 +373,51 @@ Success response:
     "updated_at": "2026-06-10T08:00:00.000Z"
   },
   "message": "Current user loaded"
+}
+```
+
+---
+
+### 10.2. `POST /chat`
+
+Sends a user message, optional page context, and optional chat history to the
+Gemini-backed AI assistant.
+
+Request:
+
+```json
+{
+  "message": "Suggest what I should work on tonight",
+  "context": "Weekly dashboard summary and deadline data",
+  "history": [
+    {
+      "sender": "user",
+      "text": "What is my riskiest deadline?"
+    },
+    {
+      "sender": "assistant",
+      "text": "Your riskiest deadline is Assignment 2."
+    }
+  ]
+}
+```
+
+Rules:
+
+- `message` is required.
+- `context` is optional and should contain current user/dashboard/deadline data.
+- `history` is optional and preserves conversational continuity.
+- `GEMINI_API_KEY` must be configured and valid.
+
+Success response:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "reply": "Suggested AI response"
+  },
+  "message": "Success"
 }
 ```
 
@@ -681,16 +739,18 @@ Request:
 
 ```json
 {
-  "days": 7
+  "days": 7,
+  "course_id": "course-uuid"
 }
 ```
 
 Rules:
 
 - `days` supports `7` or `30`; any other value falls back to `7`.
+- `course_id` is required and must belong to the current user.
 - The user must connect Gmail first.
 - `GEMINI_API_KEY` must be a valid Google AI Studio Gemini API key because Gmail import uses Gemini to parse deadlines.
-- The user must have at least one course before import because imported deadlines need a `course_id`.
+- The user must select a course before import because imported deadlines need a `course_id`.
 - Imported Gmail messages are deduplicated with `deadlines.gmail_message_id`.
 
 ### 15.5. `POST /gmail/disconnect`
