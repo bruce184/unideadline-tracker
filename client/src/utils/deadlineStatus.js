@@ -12,10 +12,10 @@ export function getDisplayStatus(deadline) {
 export const STATUS_OPTIONS = ['Not Started', 'In Progress', 'Submitted']
 
 export const STATUS_LABEL = {
-  'Not Started': 'Not Started',
-  'In Progress': 'In Progress',
-  Submitted: 'Submitted',
-  Overdue: 'Overdue',
+  'Not Started': 'Chưa bắt đầu',
+  'In Progress': 'Đang làm',
+  Submitted: 'Đã nộp',
+  Overdue: 'Quá hạn',
 }
 
 export const STATUS_COLOR = {

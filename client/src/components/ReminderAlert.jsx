@@ -1,4 +1,5 @@
 import { getDisplayStatus } from '../utils/deadlineStatus'
+import { formatDateTime } from '../utils/deadlineUtils'
 
 function getAlertType(deadline) {
   const status = getDisplayStatus(deadline)
@@ -17,12 +18,12 @@ const ALERT_STYLE = {
   overdue: {
     bg: 'bg-red-50 border-red-200',
     text: 'text-red-700',
-    label: 'Overdue',
+    label: 'Quá hạn',
   },
   'near-due': {
     bg: 'bg-amber-50 border-amber-200',
     text: 'text-amber-700',
-    label: 'Due soon',
+    label: 'Sắp đến hạn',
   },
 }
 
@@ -51,10 +52,8 @@ export default function ReminderAlert({ deadlines }) {
                 {deadline.title}
               </p>
               <p className={`mt-0.5 text-xs ${style.text} opacity-70`}>
-                {deadline.course?.course_name ?? 'No course'} - Due:{' '}
-                {new Date(deadline.due_date).toLocaleString('vi-VN', {
-                  timeZone: 'Asia/Ho_Chi_Minh',
-                })}
+                {deadline.course?.course_name ?? 'Chưa có môn học'} - Hạn:{' '}
+                {formatDateTime(deadline.due_date)}
               </p>
             </div>
           </div>

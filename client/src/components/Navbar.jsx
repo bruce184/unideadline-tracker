@@ -2,13 +2,13 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const navItems = [
-  { to: '/dashboard', label: 'Tong quan', icon: 'dashboard' },
-  { to: '/deadlines', label: 'Lich deadline', icon: 'calendar_month' },
-  { to: '/tasks', label: 'Nhiem vu', icon: 'assignment' },
-  { to: '/courses', label: 'Mon hoc', icon: 'menu_book' },
-  { to: '/friends-groups', label: 'Nhom ban', icon: 'groups' },
-  { to: '/ai-suggestions', label: 'Goi y AI', icon: 'smart_toy' },
-  { to: '/risk-analysis', label: 'Phan tich rui ro', icon: 'analytics' },
+  { to: '/dashboard', label: 'Tổng quan', icon: 'dashboard' },
+  { to: '/deadlines', label: 'Lịch deadline', icon: 'calendar_month' },
+  { to: '/tasks', label: 'Nhiệm vụ', icon: 'assignment' },
+  { to: '/courses', label: 'Môn học', icon: 'menu_book' },
+  { to: '/friends-groups', label: 'Nhóm bạn', icon: 'groups' },
+  { to: '/ai-suggestions', label: 'Gợi ý AI', icon: 'smart_toy' },
+  { to: '/risk-analysis', label: 'Phân tích rủi ro', icon: 'analytics' },
 ]
 
 export default function Navbar() {
@@ -16,7 +16,7 @@ export default function Navbar() {
   const navigate = useNavigate()
 
   const handleLogout = async () => {
-    if (window.confirm('Ban co chac chan muon dang xuat khong?')) {
+    if (window.confirm('Bạn có chắc chắn muốn đăng xuất không?')) {
       await logout()
       navigate('/login')
     }
@@ -68,7 +68,7 @@ export default function Navbar() {
             )}
           >
             <span className="material-symbols-outlined text-[18px]">sync</span>
-            Tich hop
+            Tích hợp
           </NavLink>
 
           <NavLink
@@ -89,7 +89,7 @@ export default function Navbar() {
                 >
                   settings
                 </span>
-                <span className="text-sm font-medium">Cai dat</span>
+                <span className="text-sm font-medium">Cài đặt</span>
               </>
             )}
           </NavLink>
@@ -107,7 +107,7 @@ export default function Navbar() {
           onClick={handleLogout}
           className="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-600"
         >
-          Dang xuat
+          Đăng xuất
         </button>
       </header>
 

@@ -132,7 +132,7 @@ export default function Integrations() {
   }
 
   const handleDisconnect = async () => {
-    if (!window.confirm('Ngắt kết nối Gmail? Các deadline đã import sẽ được giữ lại.')) return
+    if (!window.confirm('Ngắt kết nối Gmail? Các deadline đã nhập sẽ được giữ lại.')) return
     try {
       setDisconnecting(true)
       await disconnectGmail()
@@ -149,7 +149,7 @@ export default function Integrations() {
 
   const handleImport = async () => {
     if (!selectedCourseId) {
-      showToast('Chọn môn học trước khi import từ Gmail', 'error')
+      showToast('Chọn môn học trước khi nhập từ Gmail', 'error')
       return
     }
 
@@ -159,12 +159,12 @@ export default function Integrations() {
       const result = await importFromGmail(days, selectedCourseId)
       setImportResult(result)
       if (result.imported > 0) {
-        showToast(`Đã import ${result.imported} deadline mới từ Gmail!`)
+        showToast(`Đã nhập ${result.imported} deadline mới từ Gmail!`)
       } else {
         showToast('Không tìm thấy deadline mới trong email.', 'info')
       }
     } catch (err) {
-      showToast(err.message || 'Import thất bại', 'error')
+      showToast(err.message || 'Nhập thất bại', 'error')
     } finally {
       setImporting(false)
     }
@@ -205,12 +205,12 @@ export default function Integrations() {
             </span>
             <div>
               <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
-                Gmail Integration
+                Tích hợp Gmail
                 <span className="bg-gradient-to-r from-violet-500 to-[#3b309e] text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider flex items-center gap-0.5">
                   <span className="material-symbols-outlined text-[10px] font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
                     auto_awesome
                   </span>
-                  AI Powered
+                  AI hỗ trợ
                 </span>
               </h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
@@ -275,10 +275,10 @@ export default function Integrations() {
             )}
           </section>
 
-          {/* Card phải: import */}
+          {/* Card phải: nhập deadline */}
           <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
             <h4 className="font-bold text-sm text-slate-900 border-b border-slate-100 pb-3 flex items-center justify-between">
-              Import deadline từ Gmail
+              Nhập deadline từ Gmail
               <span className="material-symbols-outlined text-[18px] text-slate-400">download</span>
             </h4>
 
@@ -331,12 +331,12 @@ export default function Integrations() {
                   </select>
                   {!loadingCourses && courses.length === 0 && (
                     <p className="mt-2 text-[10px] text-amber-600">
-                      Tạo ít nhất một môn học trước khi import deadline từ Gmail.
+                      Tạo ít nhất một môn học trước khi nhập deadline từ Gmail.
                     </p>
                   )}
                 </div>
 
-                {/* Nút import */}
+                {/* Nút nhập deadline */}
                 <button
                   onClick={handleImport}
                   disabled={importing || loadingCourses || !selectedCourseId}
@@ -345,19 +345,19 @@ export default function Integrations() {
                   <span className={`material-symbols-outlined text-[16px] ${importing ? 'animate-spin' : ''}`}>
                     {importing ? 'refresh' : 'sync'}
                   </span>
-                  {importing ? 'Đang import...' : 'Import ngay'}
+                  {importing ? 'Đang nhập...' : 'Nhập ngay'}
                 </button>
 
-                {/* Kết quả import */}
+                {/* Kết quả nhập deadline */}
                 {importResult && (
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 space-y-2">
                     <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
-                      Kết quả lần import vừa rồi
+                      Kết quả lần nhập vừa rồi
                     </p>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2">
                         <p className="text-lg font-bold text-emerald-600">{importResult.imported}</p>
-                        <p className="text-[10px] text-emerald-500 font-semibold">Đã import</p>
+                        <p className="text-[10px] text-emerald-500 font-semibold">Đã nhập</p>
                       </div>
                       <div className="bg-slate-100 border border-slate-200 rounded-lg p-2">
                         <p className="text-lg font-bold text-slate-500">{importResult.skipped}</p>
@@ -377,7 +377,7 @@ export default function Integrations() {
               </div>
             ) : (
               <div className="flex items-center justify-center h-full py-12 text-slate-400 text-xs text-center">
-                Kết nối Gmail trước để bắt đầu import deadline.
+                Kết nối Gmail trước để bắt đầu nhập deadline.
               </div>
             )}
           </section>
@@ -403,7 +403,7 @@ export default function Integrations() {
             <span className="material-symbols-outlined text-[#3b309e] text-[20px] block">content_copy</span>
             <h5 className="font-bold text-xs text-slate-800">Không trùng lặp</h5>
             <p className="text-[10px] text-slate-500 leading-relaxed">
-              Mỗi email chỉ được import một lần, bấm sync nhiều lần cũng không bị trùng deadline.
+              Mỗi email chỉ được nhập một lần, bấm đồng bộ nhiều lần cũng không bị trùng deadline.
             </p>
           </div>
         </section>

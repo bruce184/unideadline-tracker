@@ -222,7 +222,7 @@ export default function RiskAnalysis() {
         <div className="mt-4 rounded-2xl bg-[#f1edff] p-5">
           <div className="flex items-center gap-2 text-[#5140b6]">
             <Sparkles className="h-4 w-4" />
-            <p className="text-sm font-semibold">AI Insight & Khuyến nghị</p>
+            <p className="text-sm font-semibold">Nhận định AI & Khuyến nghị</p>
           </div>
           <ul className="mt-3 space-y-2 text-sm text-slate-600">
             {topCourse && (

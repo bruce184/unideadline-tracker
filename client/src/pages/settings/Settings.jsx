@@ -26,8 +26,8 @@ export default function Settings() {
           </div>
 
           <div className="flex-1 space-y-1 text-center md:text-left">
-            <h3 className="text-xl font-bold text-slate-900">{user?.display_name || 'No name'}</h3>
-            <p className="text-sm font-medium text-slate-500">{user?.email || 'No email'}</p>
+            <h3 className="text-xl font-bold text-slate-900">{user?.display_name || 'Chưa có tên'}</h3>
+            <p className="text-sm font-medium text-slate-500">{user?.email || 'Chưa có email'}</p>
           </div>
         </section>
 
@@ -42,7 +42,7 @@ export default function Settings() {
               <span className="material-symbols-outlined text-[32px] text-red-500">mail</span>
               <div>
                 <h4 className="text-xs font-bold text-slate-800">Gmail</h4>
-                <p className="text-[10px] text-slate-400">Kết nối và import deadline từ email</p>
+                <p className="text-[10px] text-slate-400">Kết nối và nhập deadline từ email</p>
               </div>
             </div>
             <button
