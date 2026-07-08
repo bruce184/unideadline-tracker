@@ -8,19 +8,15 @@ import {
   getFriendsGroupsOverview,
   updateGroupTask,
 } from '../../services/groupService'
+import { formatDateTime, toDateTimeLocal, toIsoDateTime } from '../../utils/deadlineUtils'
 
 const statusOptions = ['Not Started', 'In Progress', 'Submitted']
+const DEFAULT_TASK_DUE_OFFSET_MS = 24 * 60 * 60 * 1000
 
-function toLocalInputValue(date = new Date()) {
-  const value = new Date(date)
-  value.setHours(value.getHours() + 24)
-  value.setMinutes(0, 0, 0)
-  return value.toISOString().slice(0, 16)
-}
-
-function toIsoValue(value) {
-  if (!value) return ''
-  return new Date(value).toISOString()
+function getDefaultTaskDueDate() {
+  const date = new Date(Date.now() + DEFAULT_TASK_DUE_OFFSET_MS)
+  date.setMinutes(0, 0, 0)
+  return toDateTimeLocal(date)
 }
 
 function riskLabel(risk) {
@@ -42,7 +38,7 @@ export default function FriendsGroups() {
   const [taskForm, setTaskForm] = useState({
     title: '',
     assigned_member_id: '',
-    due_date: toLocalInputValue(),
+    due_date: getDefaultTaskDueDate(),
     status: 'Not Started',
     progress_note: '',
   })
@@ -130,13 +126,13 @@ export default function FriendsGroups() {
     refreshAfter(async () => {
       await createGroupTask(selectedProject.id, {
         ...taskForm,
-        due_date: toIsoValue(taskForm.due_date),
+        due_date: toIsoDateTime(taskForm.due_date),
         assigned_member_id: taskForm.assigned_member_id || null,
       })
       setTaskForm({
         title: '',
         assigned_member_id: '',
-        due_date: toLocalInputValue(),
+        due_date: getDefaultTaskDueDate(),
         status: 'Not Started',
         progress_note: '',
       })
@@ -276,7 +272,7 @@ export default function FriendsGroups() {
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="font-semibold text-slate-950">{task.title}</p>
-                            <p className="mt-1 text-sm text-slate-500">{task.assignee?.display_name || task.assignee?.email || 'Chua gan ai'} - due {new Date(task.due_date).toLocaleString()}</p>
+                            <p className="mt-1 text-sm text-slate-500">{task.assignee?.display_name || task.assignee?.email || 'Chua gan ai'} - due {formatDateTime(task.due_date)}</p>
                             {task.progress_note && <p className="mt-2 text-sm text-slate-500">{task.progress_note}</p>}
                           </div>
                           <div className="flex flex-wrap items-center gap-2">
