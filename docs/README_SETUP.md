@@ -199,7 +199,7 @@ SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
-GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_KEY=your_google_ai_studio_api_key_here
 
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
@@ -436,6 +436,15 @@ Supabase:
 [ ] Deadline submission link is visible/clickable when present
 [ ] Mobile width is usable
 ```
+
+AI/Gmail demo prerequisites:
+
+- `GEMINI_API_KEY` must be set for AI Suggestions chat and Gmail deadline parsing.
+- Use a Google AI Studio Gemini API key for `GEMINI_API_KEY` (it normally starts with `AIza`).
+- Google OAuth redirect URI must exactly match `http://localhost:3001/api/v1/gmail/callback`.
+- The demo user must have at least one course before importing from Gmail.
+- The Gmail inbox should contain at least one recent email with an explicit deadline, for example "Assignment 2 is due on July 20, 2026 at 23:59".
+- Gmail import attaches new deadlines to the user's first course and skips duplicate Gmail messages.
 
 Recommended demo flow:
 

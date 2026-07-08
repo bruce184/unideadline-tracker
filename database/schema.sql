@@ -419,3 +419,14 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- Grant service_role access to all tables (required when using service key in server)
+grant all on public.profiles to service_role;
+grant all on public.courses to service_role;
+grant all on public.deadlines to service_role;
+grant all on public.reminders to service_role;
+grant all on public.gmail_connections to service_role;
+grant all on public.friendships to service_role;
+grant all on public.group_projects to service_role;
+grant all on public.group_project_members to service_role;
+grant all on public.group_tasks to service_role;

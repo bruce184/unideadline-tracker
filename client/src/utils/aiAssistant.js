@@ -45,6 +45,19 @@ ${listTopDeadlines(summary.scored, 5)}
     return result.data?.reply || result.reply
   } catch (error) {
     console.error('Error calling AI Assistant:', error)
+
+    if (error.code === 'AI_CONFIG_MISSING') {
+      return 'Trợ lý AI chưa được cấu hình GEMINI_API_KEY. Vui lòng kiểm tra server/.env trước khi demo tính năng này.'
+    }
+
+    if (error.code === 'AI_CONFIG_INVALID') {
+      return 'GEMINI_API_KEY hiện không đúng định dạng Google AI Studio API key. Hãy thay key hợp lệ trước khi demo AI Chat.'
+    }
+
+    if (error.code === 'AI_EMPTY_RESPONSE') {
+      return 'Trợ lý AI chưa tạo được câu trả lời phù hợp. Vui lòng thử lại với câu hỏi cụ thể hơn.'
+    }
+
     return 'Xin lỗi bạn, kết nối đến Trợ lý AI đang gặp sự cố nhỏ. Vui lòng thử lại sau giây lát!'
   }
 }

@@ -26,12 +26,21 @@ function isGmailOAuthConfigured() {
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
+function isGeminiConfigured() {
+  return Boolean(process.env.GEMINI_API_KEY?.trim())
+}
+
+function isGeminiApiKeyValid() {
+  return process.env.GEMINI_API_KEY?.trim().startsWith('AIza')
+}
+
 async function getValidAccessToken(userId) {
-  const { data: conn } = await findGmailConnection(userId)
-  if (!conn) return null
+  const { data: conn, error } = await findGmailConnection(userId)
+  if (error) return { accessToken: null, error }
+  if (!conn) return { accessToken: null }
 
   const expiresAt = new Date(conn.token_expires_at).getTime()
-  if (expiresAt - Date.now() > 60 * 1000) return conn.access_token
+  if (expiresAt - Date.now() > 60 * 1000) return { accessToken: conn.access_token }
 
   // Refresh
   const res = await fetch(GOOGLE_TOKEN_URL, {
@@ -49,17 +58,24 @@ async function getValidAccessToken(userId) {
 
   if (!res.ok) {
     await deleteGmailConnection(userId)
-    return null
+    return { accessToken: null }
   }
 
-  await upsertGmailConnection(userId, {
+  if (!payload.access_token || !payload.expires_in) {
+    await deleteGmailConnection(userId)
+    return { accessToken: null }
+  }
+
+  const { error: updateError } = await upsertGmailConnection(userId, {
     access_token: payload.access_token,
     refresh_token: conn.refresh_token,
     token_expires_at: new Date(Date.now() + payload.expires_in * 1000).toISOString(),
     connected_at: conn.connected_at,
   })
 
-  return payload.access_token
+  if (updateError) return { accessToken: null, error: updateError }
+
+  return { accessToken: payload.access_token }
 }
 
 function extractEmailBody(payload) {
@@ -111,7 +127,9 @@ Body: ${body.slice(0, 2000)}`
       config: { temperature: 0.1 },
     })
 
-    const text = response.text.replace(/```json|```/g, '').trim()
+    const text = response.text?.replace(/```json|```/g, '').trim()
+    if (!text) return { found: false }
+
     return JSON.parse(text)
   } catch {
     return { found: false }
@@ -194,15 +212,13 @@ export async function gmailCallback(req, res) {
 
     const gmailAddress = await fetchGmailAddress(tokenPayload.access_token)
 
-    const { data: savedConn, error: saveError } = await upsertGmailConnection(userId, {
+    const { error: saveError } = await upsertGmailConnection(userId, {
       email: gmailAddress,
       access_token: tokenPayload.access_token,
       refresh_token: tokenPayload.refresh_token,
       token_expires_at: new Date(Date.now() + tokenPayload.expires_in * 1000).toISOString(),
       connected_at: new Date().toISOString(),
     })
-
-    console.log('[Gmail callback] upsert result:', savedConn, 'error:', saveError)
 
     if (saveError) {
       console.error('[Gmail callback] Failed to save connection:', saveError)
@@ -220,7 +236,13 @@ export async function gmailCallback(req, res) {
  * GET /api/v1/gmail/status
  */
 export async function getGmailStatus(req, res) {
-  const { data } = await findGmailConnection(req.user.id)
+  const { data, error } = await findGmailConnection(req.user.id)
+
+  if (error) {
+    console.error('Find Gmail connection failed:', error.message)
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load Gmail connection status')
+  }
+
   return sendSuccess(res, {
     connected: Boolean(data),
     connectedAt: data?.connected_at || null,
@@ -232,7 +254,12 @@ export async function getGmailStatus(req, res) {
  * POST /api/v1/gmail/disconnect
  */
 export async function disconnectGmail(req, res) {
-  await deleteGmailConnection(req.user.id)
+  const { error } = await deleteGmailConnection(req.user.id)
+  if (error) {
+    console.error('Delete Gmail connection failed:', error.message)
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not disconnect Gmail')
+  }
+
   return sendSuccess(res, {}, 'Đã ngắt kết nối Gmail')
 }
 
@@ -254,7 +281,24 @@ export async function importFromGmail(req, res) {
   const userId = req.user.id
   const days = parseInt(req.body.days) === 30 ? 30 : 7
 
-  const accessToken = await getValidAccessToken(userId)
+  if (!isGmailOAuthConfigured()) {
+    return sendError(res, 500, 'GMAIL_CONFIG_MISSING', 'Gmail OAuth is not configured')
+  }
+
+  if (!isGeminiConfigured()) {
+    return sendError(res, 500, 'AI_CONFIG_MISSING', 'Gemini AI is not configured')
+  }
+
+  if (!isGeminiApiKeyValid()) {
+    return sendError(res, 500, 'AI_CONFIG_INVALID', 'Gemini API key looks invalid. Use a Google AI Studio API key.')
+  }
+
+  const { accessToken, error: tokenError } = await getValidAccessToken(userId)
+  if (tokenError) {
+    console.error('Get Gmail access token failed:', tokenError.message)
+    return sendError(res, 500, 'INTERNAL_SERVER_ERROR', 'Could not load Gmail connection')
+  }
+
   if (!accessToken) {
     return sendError(res, 401, 'GMAIL_NOT_CONNECTED', 'Chưa kết nối Gmail')
   }

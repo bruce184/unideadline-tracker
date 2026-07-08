@@ -1,12 +1,28 @@
 import { GoogleGenAI } from '@google/genai'
 import { sendSuccess, sendError } from '../utils/responses.js'
 
+function isGeminiConfigured() {
+    return Boolean(process.env.GEMINI_API_KEY?.trim())
+}
+
+function isGeminiApiKeyValid() {
+    return process.env.GEMINI_API_KEY?.trim().startsWith('AIza')
+}
+
 export const handleChatAI = async (req, res) => {
     try {
         const { message, context, history } = req.body; 
 
         if (!message) {
             return sendError(res, 400, 'BAD_REQUEST', 'Tin nhắn không được bỏ trống');
+        }
+
+        if (!isGeminiConfigured()) {
+            return sendError(res, 500, 'AI_CONFIG_MISSING', 'Gemini AI is not configured');
+        }
+
+        if (!isGeminiApiKeyValid()) {
+            return sendError(res, 500, 'AI_CONFIG_INVALID', 'Gemini API key looks invalid. Use a Google AI Studio API key.');
         }
 
         const systemInstruction = `
@@ -41,9 +57,14 @@ QUY TẮC PHẢN HỒI:
             }
         });
 
-        return sendSuccess(res, { reply: response.text });
+        const reply = response.text?.trim()
+        if (!reply) {
+            return sendError(res, 502, 'AI_EMPTY_RESPONSE', 'AI service returned an empty response');
+        }
+
+        return sendSuccess(res, { reply });
     } catch (error) {
-        console.error("Lỗi tại Chat Controller:", error);
+        console.error("Lỗi tại Chat Controller:", error.message);
         return sendError(res, 500, 'AI_SERVICE_ERROR', 'Lỗi kết nối dịch vụ AI');
     }
 }

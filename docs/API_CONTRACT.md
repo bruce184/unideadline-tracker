@@ -689,6 +689,7 @@ Rules:
 
 - `days` supports `7` or `30`; any other value falls back to `7`.
 - The user must connect Gmail first.
+- `GEMINI_API_KEY` must be a valid Google AI Studio Gemini API key because Gmail import uses Gemini to parse deadlines.
 - The user must have at least one course before import because imported deadlines need a `course_id`.
 - Imported Gmail messages are deduplicated with `deadlines.gmail_message_id`.
 
