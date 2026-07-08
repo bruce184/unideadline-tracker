@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
 
 export default function Settings() {
@@ -15,9 +16,21 @@ export default function Settings() {
 
   return (
     <Layout>
-      <header className="mb-6 flex w-full items-center justify-between rounded-2xl border border-[#e9e2fb] bg-white px-4 py-3 shadow-[0_14px_40px_rgba(91,69,170,0.03)]">
-        <h2 className="text-xl font-bold text-slate-900">Cài đặt tài khoản</h2>
-      </header>
+      <PageHeader
+        eyebrow="Thiết lập"
+        title="Cài đặt tài khoản"
+        description="Quản lý hồ sơ, tích hợp dữ liệu và phiên đăng nhập hiện tại."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Hồ sơ cá nhân
+            </span>
+            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+              Tích hợp Gmail
+            </span>
+          </>
+        }
+      />
 
       <div className="mx-auto max-w-4xl space-y-6 pb-10">
         <section className="flex flex-col items-center gap-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm md:flex-row">

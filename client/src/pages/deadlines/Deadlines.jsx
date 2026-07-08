@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import { listDeadlines, updateDeadline } from '../../services/deadlineService'
 import { listCourses } from '../../services/courseService'
 import {
@@ -198,6 +199,8 @@ export default function Deadlines() {
   const selectedDayDeadlines = useMemo(() => {
     return deadlinesByDate[selectedDateKey] || []
   }, [deadlinesByDate, selectedDateKey])
+  const selectedMonthLabel = `${monthNames[currentDate.getMonth()]}, ${currentDate.getFullYear()}`
+  const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length
 
   // Format tiêu đề ngày của Detail Panel (Ví dụ: "Thứ Tư, 10/04")
   const formattedSelectedDateHeader = useMemo(() => {
@@ -274,51 +277,65 @@ export default function Deadlines() {
 
   return (
     <Layout>
-      {/* Top Header và Bộ chuyển tháng */}
-      <header className="flex flex-col gap-4 justify-between items-start md:items-center md:flex-row px-4 py-3 w-full bg-white rounded-2xl border border-[#e9e2fb] mb-6 shadow-[0_14px_40px_rgba(91,69,170,0.03)]">
-        <div className="flex flex-wrap items-center gap-4">
-          <h2 className="text-xl font-bold text-slate-900">Lịch deadline</h2>
-          <div className="flex items-center bg-[#f0ecf6] rounded-full px-3 py-1 border border-outline-variant/30">
-            <button 
-              onClick={handlePrevMonth} 
-              className="p-1 hover:text-[#3b309e] transition-colors rounded-full hover:bg-white/50"
-              title="Tháng trước"
-            >
-              <span className="material-symbols-outlined text-[20px] block" data-icon="chevron_left">chevron_left</span>
-            </button>
-            <span className="px-3 font-semibold text-sm text-slate-800 min-w-[120px] text-center">
-              {monthNames[currentDate.getMonth()]}, {currentDate.getFullYear()}
+      <PageHeader
+        eyebrow="Quản lý deadline"
+        title="Lịch deadline"
+        description="Xem lịch theo tháng, lọc nhanh theo môn học/trạng thái và mở chi tiết deadline trong cùng một màn hình."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Tổng: {loading ? '-' : deadlines.length}
             </span>
-            <button 
-              onClick={handleNextMonth} 
-              className="p-1 hover:text-[#3b309e] transition-colors rounded-full hover:bg-white/50"
-              title="Tháng sau"
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              Ngày đang chọn: {selectedDayDeadlines.length}
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Bộ lọc: {activeFilterCount || 'không'}
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <div className="flex items-center rounded-full border border-outline-variant/30 bg-[#f0ecf6] px-3 py-1">
+              <button
+                onClick={handlePrevMonth}
+                className="rounded-full p-1 transition-colors hover:bg-white/70 hover:text-[#3b309e]"
+                title="Tháng trước"
+              >
+                <span className="material-symbols-outlined block text-[20px]" data-icon="chevron_left">chevron_left</span>
+              </button>
+              <span className="min-w-[120px] px-3 text-center text-sm font-semibold text-slate-800">
+                {selectedMonthLabel}
+              </span>
+              <button
+                onClick={handleNextMonth}
+                className="rounded-full p-1 transition-colors hover:bg-white/70 hover:text-[#3b309e]"
+                title="Tháng sau"
+              >
+                <span className="material-symbols-outlined block text-[20px]" data-icon="chevron_right">chevron_right</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center justify-center gap-1 rounded-xl border px-4 py-2 text-sm font-semibold transition-all ${
+                showFilters
+                  ? 'border-[#3b309e] bg-[#3b309e] text-white'
+                  : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+              }`}
             >
-              <span className="material-symbols-outlined text-[20px] block" data-icon="chevron_right">chevron_right</span>
+              <span className="material-symbols-outlined text-[18px]">filter_alt</span>
+              Bộ lọc
             </button>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center justify-center gap-1 rounded-xl px-4 py-2 text-sm font-semibold border transition-all ${
-              showFilters 
-                ? 'bg-[#3b309e] text-white border-[#3b309e]' 
-                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">filter_alt</span>
-            Bộ lọc
-          </button>
-          <Link 
-            to="/deadlines/new" 
-            className="flex-1 md:flex-initial bg-[#3b309e] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#2e2482] transition-all flex items-center justify-center gap-1"
-          >
-            <span className="material-symbols-outlined text-[18px]">add</span>
-            Thêm Deadline
-          </Link>
-        </div>
-      </header>
+            <Link
+              to="/deadlines/new"
+              className="flex items-center justify-center gap-1 rounded-xl bg-[#3b309e] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#2e2482]"
+            >
+              <span className="material-symbols-outlined text-[18px]">add</span>
+              Thêm deadline
+            </Link>
+          </>
+        }
+      />
 
       {/* Form bộ lọc tìm kiếm collapsible */}
       {showFilters && (

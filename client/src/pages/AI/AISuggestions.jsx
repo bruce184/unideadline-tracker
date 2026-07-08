@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, Bell, Bot, Send, Sparkles, User } from 'lucide-react'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
 import { getWeeklyDashboard } from '../../services/dashboardService'
 import { formatDateTime, getMonday, toDateInputValue } from '../../utils/deadlineUtils'
@@ -139,26 +140,43 @@ export default function AISuggestions() {
 
   return (
     <Layout>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-[#6b5bd6]">UniDeadline Tracker</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Gợi ý AI</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/deadlines/new"
-            className="rounded-lg border border-[#e9e2fb] bg-white px-4 py-2 text-sm font-semibold text-[#5140b6] shadow-sm hover:bg-[#f5f1ff]"
-          >
-            Thêm Deadline
-          </Link>
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f0ebff] text-[#5b45d8]">
-            <Bell className="h-4 w-4" />
-          </span>
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#5b45d8] text-xs font-bold text-white">
-            {getInitials(user)}
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="UniDeadline Tracker"
+        title="Gợi ý AI"
+        description="Trợ lý đọc dữ liệu deadline trong tuần, phát hiện rủi ro và đề xuất bước tiếp theo để luồng AI thật rõ ràng."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Deadline tuần này: {loading ? '-' : summary.total}
+            </span>
+            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+              Rủi ro: {loading ? '-' : summary.level}
+            </span>
+            <span
+              className="max-w-full truncate rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 xl:max-w-[360px]"
+              title={riskiest?.deadline?.title || 'Không có deadline rủi ro cao'}
+            >
+              Ưu tiên: {riskiest ? riskiest.deadline.title : 'Không có deadline rủi ro cao'}
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <Link
+              to="/deadlines/new"
+              className="rounded-lg border border-[#e9e2fb] bg-white px-4 py-2 text-sm font-semibold text-[#5140b6] shadow-sm hover:bg-[#f5f1ff]"
+            >
+              Thêm deadline
+            </Link>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f0ebff] text-[#5b45d8]">
+              <Bell className="h-4 w-4" />
+            </span>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#5b45d8] text-xs font-bold text-white">
+              {getInitials(user)}
+            </span>
+          </>
+        }
+      />
 
       {error && (
         <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
@@ -171,7 +189,16 @@ export default function AISuggestions() {
 
       <div className="grid gap-4 lg:grid-cols-[1.55fr_0.9fr]">
         {/* Chat column */}
-        <section className="flex flex-col rounded-2xl border border-[#e9e2fb] bg-white shadow-[0_14px_40px_rgba(91,69,170,0.07)]">
+        <section className="flex min-h-[620px] flex-col rounded-2xl border border-[#e9e2fb] bg-white shadow-[0_14px_40px_rgba(91,69,170,0.07)]">
+          <div className="flex items-center justify-between border-b border-[#eee8ff] px-5 py-4">
+            <div>
+              <p className="text-sm font-semibold text-slate-950">Chat AI gợi ý</p>
+              <p className="mt-1 text-xs text-slate-500">Hỏi trực tiếp về ưu tiên, lịch học hoặc rủi ro deadline.</p>
+            </div>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Sẵn sàng Gemini
+            </span>
+          </div>
           <div ref={scrollRef} className="max-h-[640px] flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
             {loading ? (
               <div className="p-8 text-center text-slate-400">Đang phân tích deadline...</div>

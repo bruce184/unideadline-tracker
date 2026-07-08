@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import { listCourses, createCourse, updateCourse, deleteCourse } from '../../services/courseService'
 
 const initialForm = { course_name: '', course_code: '', semester: '' }
@@ -107,19 +108,29 @@ export default function Courses() {
 
   return (
     <Layout>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#6b5bd6]">UniDeadline Tracker</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Môn học</h1>
-          <p className="mt-2 text-sm text-slate-500">Quản lý môn học và học kỳ để gán deadline.</p>
-        </div>
-        <button
-          onClick={openCreate}
-          className="rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4933c5]"
-        >
-          Thêm môn học
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="UniDeadline Tracker"
+        title="Môn học"
+        description="Quản lý môn học và học kỳ để gán deadline đúng ngữ cảnh."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Môn học: {loading ? '-' : courses.length}
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {showForm ? 'Đang mở biểu mẫu' : 'Sẵn sàng tạo deadline'}
+            </span>
+          </>
+        }
+        actions={
+          <button
+            onClick={openCreate}
+            className="rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4933c5]"
+          >
+            Thêm môn học
+          </button>
+        }
+      />
 
       {showForm && (
         <div className="mb-6 rounded-2xl border border-[#e9e2fb] bg-white p-5 shadow-[0_14px_40px_rgba(91,69,170,0.07)] sm:p-6">

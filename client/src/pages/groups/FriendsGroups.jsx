@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import {
   addGroupProjectMember,
   createFriend,
@@ -151,15 +152,35 @@ export default function FriendsGroups() {
 
   return (
     <Layout>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#6b5bd6]">Theo dõi nhóm</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Nhóm bạn</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-500">
-            Tạo dự án nhóm, thêm bạn bè và theo dõi tiến độ của từng thành viên.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Theo dõi nhóm"
+        title="Nhóm bạn"
+        description="Tạo dự án nhóm, thêm bạn bè và theo dõi tiến độ của từng thành viên trong cùng một màn hình."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Bạn bè: {friends.length}
+            </span>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              Dự án: {projects.length}
+            </span>
+            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+              Điểm nghẽn: {allBottlenecks.length}
+            </span>
+          </>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={fetchOverview}
+            disabled={loading}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#e9e2fb] bg-white px-4 py-2 text-sm font-semibold text-[#5140b6] shadow-sm hover:bg-[#f5f1ff] disabled:opacity-60"
+          >
+            <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
+            Làm mới
+          </button>
+        }
+      />
 
       {error && (
         <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
@@ -173,16 +194,25 @@ export default function FriendsGroups() {
       ) : (
         <div className="space-y-6">
           <section className="grid gap-4 lg:grid-cols-3">
-            <div className="rounded-2xl border border-[#e9e2fb] bg-white p-5">
-              <p className="text-sm font-semibold text-slate-500">Bạn bè</p>
+            <div className="rounded-2xl border border-[#e9e2fb] bg-white p-5 shadow-[0_10px_28px_rgba(91,69,170,0.04)]">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-500">Bạn bè</p>
+                <span className="material-symbols-outlined rounded-lg bg-[#f0ebff] p-2 text-[20px] text-[#5140b6]">group</span>
+              </div>
               <p className="mt-2 text-3xl font-bold text-slate-950">{friends.length}</p>
             </div>
-            <div className="rounded-2xl border border-[#e9e2fb] bg-white p-5">
-              <p className="text-sm font-semibold text-slate-500">Dự án</p>
+            <div className="rounded-2xl border border-[#e9e2fb] bg-white p-5 shadow-[0_10px_28px_rgba(91,69,170,0.04)]">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-500">Dự án</p>
+                <span className="material-symbols-outlined rounded-lg bg-blue-50 p-2 text-[20px] text-blue-600">folder_managed</span>
+              </div>
               <p className="mt-2 text-3xl font-bold text-slate-950">{projects.length}</p>
             </div>
-            <div className="rounded-2xl border border-red-100 bg-white p-5">
-              <p className="text-sm font-semibold text-red-500">Điểm nghẽn</p>
+            <div className="rounded-2xl border border-red-100 bg-white p-5 shadow-[0_10px_28px_rgba(239,68,68,0.05)]">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-red-500">Điểm nghẽn</p>
+                <span className="material-symbols-outlined rounded-lg bg-red-50 p-2 text-[20px] text-red-600">warning</span>
+              </div>
               <p className="mt-2 text-3xl font-bold text-red-600">{allBottlenecks.length}</p>
             </div>
           </section>
@@ -194,7 +224,9 @@ export default function FriendsGroups() {
                 <input required type="email" value={friendForm.email} onChange={(event) => setFriendForm((current) => ({ ...current, email: event.target.value }))} className="rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="friend@example.com" />
                 <input value={friendForm.display_name} onChange={(event) => setFriendForm((current) => ({ ...current, display_name: event.target.value }))} className="rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="Tên hiển thị" />
               </div>
-              <button disabled={saving === 'friend'} className="mt-4 rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Thêm bạn</button>
+              <button disabled={saving === 'friend'} className="mt-4 rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {saving === 'friend' ? 'Đang thêm...' : 'Thêm bạn'}
+              </button>
               <div className="mt-4 space-y-2">
                 {friends.map((friend) => (
                   <div key={friend.id} className="rounded-xl bg-[#fbfaff] px-3 py-2 text-sm text-slate-600">
@@ -202,6 +234,11 @@ export default function FriendsGroups() {
                     <span className="ml-2 text-xs text-slate-400">{friendStatusLabel(friend.status)}</span>
                   </div>
                 ))}
+                {friends.length === 0 && (
+                  <p className="rounded-xl bg-[#fbfaff] px-3 py-2 text-sm text-slate-500">
+                    Chưa có bạn bè nào trong danh sách.
+                  </p>
+                )}
               </div>
             </form>
 
@@ -211,7 +248,9 @@ export default function FriendsGroups() {
                 <input required value={projectForm.name} onChange={(event) => setProjectForm((current) => ({ ...current, name: event.target.value }))} className="w-full rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="Tên dự án" />
                 <textarea value={projectForm.description} onChange={(event) => setProjectForm((current) => ({ ...current, description: event.target.value }))} className="min-h-20 w-full rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="Mô tả ngắn" />
               </div>
-              <button disabled={saving === 'project'} className="mt-4 rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Tạo dự án</button>
+              <button disabled={saving === 'project'} className="mt-4 rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {saving === 'project' ? 'Đang tạo...' : 'Tạo dự án'}
+              </button>
             </form>
           </section>
 
@@ -225,6 +264,11 @@ export default function FriendsGroups() {
                     <span className="text-xs text-slate-400">{project.summary?.submitted || 0}/{project.summary?.total_tasks || 0} hoàn thành</span>
                   </button>
                 ))}
+                {projects.length === 0 && (
+                  <p className="rounded-xl bg-[#fbfaff] p-4 text-sm text-slate-500">
+                    Tạo dự án đầu tiên để bắt đầu theo dõi tiến độ nhóm.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -247,7 +291,9 @@ export default function FriendsGroups() {
                       <input required type="email" value={memberForm.email} onChange={(event) => setMemberForm((current) => ({ ...current, email: event.target.value }))} className="w-full rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="member@example.com" />
                       <input value={memberForm.display_name} onChange={(event) => setMemberForm((current) => ({ ...current, display_name: event.target.value }))} className="w-full rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="Tên thành viên" />
                     </div>
-                    <button className="mt-4 rounded-lg bg-[#f0ebff] px-4 py-2 text-sm font-semibold text-[#5140b6]">Thêm vào dự án</button>
+                    <button disabled={saving === 'member'} className="mt-4 rounded-lg bg-[#f0ebff] px-4 py-2 text-sm font-semibold text-[#5140b6] disabled:opacity-50">
+                      {saving === 'member' ? 'Đang thêm...' : 'Thêm vào dự án'}
+                    </button>
                   </form>
 
                   <form onSubmit={handleCreateTask} className="rounded-2xl border border-[#e9e2fb] bg-white p-5">
@@ -266,7 +312,9 @@ export default function FriendsGroups() {
                       </select>
                       <textarea value={taskForm.progress_note} onChange={(event) => setTaskForm((current) => ({ ...current, progress_note: event.target.value }))} className="min-h-20 w-full rounded-lg border border-[#e5def8] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6]" placeholder="Cập nhật tiến độ" />
                     </div>
-                    <button className="mt-4 rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white">Tạo nhiệm vụ</button>
+                    <button disabled={saving === 'task'} className="mt-4 rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                      {saving === 'task' ? 'Đang tạo...' : 'Tạo nhiệm vụ'}
+                    </button>
                   </form>
                 </div>
 

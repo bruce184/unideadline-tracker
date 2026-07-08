@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import { listDeadlines, updateDeadline } from '../../services/deadlineService'
 import {
   formatDateTime,
@@ -69,6 +70,15 @@ export default function Tasks() {
       return true // 'all'
     })
   }, [deadlines, activeTab])
+  const taskStats = useMemo(() => {
+    return deadlines.reduce((stats, deadline) => {
+      const status = getEffectiveStatus(deadline)
+      if (status === 'Not Started') stats.todo += 1
+      if (status === 'In Progress') stats.doing += 1
+      if (status === 'Submitted') stats.done += 1
+      return stats
+    }, { todo: 0, doing: 0, done: 0 })
+  }, [deadlines])
 
   // Cập nhật trạng thái nộp bài nhanh
   const toggleCompleted = async (deadline) => {
@@ -130,19 +140,33 @@ export default function Tasks() {
 
   return (
     <Layout>
-      {/* Header */}
-      <header className="flex justify-between items-center px-4 py-3 w-full bg-white rounded-2xl border border-[#e9e2fb] mb-6 shadow-[0_14px_40px_rgba(91,69,170,0.03)]">
-        <h2 className="text-xl font-bold text-slate-900">Nhiệm vụ</h2>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        eyebrow="Quản lý deadline"
+        title="Nhiệm vụ"
+        description="Theo dõi trạng thái từng deadline, đánh dấu hoàn thành nhanh và ghi chú tiến độ cá nhân."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Tổng: {loading ? '-' : deadlines.length}
+            </span>
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+              Chưa làm: {loading ? '-' : taskStats.todo}
+            </span>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              Đang làm: {loading ? '-' : taskStats.doing}
+            </span>
+          </>
+        }
+        actions={
           <Link 
             to="/deadlines/new" 
-            className="bg-[#3b309e] text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-[#2e2482] transition-all flex items-center justify-center gap-1"
+            className="flex items-center justify-center gap-1 rounded-xl bg-[#3b309e] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#2e2482]"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            Thêm Deadline
+            Thêm deadline
           </Link>
-        </div>
-      </header>
+        }
+      />
 
       {error && (
         <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">

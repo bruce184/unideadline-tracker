@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bell, Minus, Sparkles, TrendingDown, TrendingUp } from 'lucide-react'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../hooks/useAuth'
 import { listDeadlines } from '../../services/deadlineService'
 import {
@@ -100,37 +101,54 @@ export default function RiskAnalysis() {
 
   return (
     <Layout>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-semibold text-[#6b5bd6]">UniDeadline Tracker</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Phân tích rủi ro</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <select
-            value={horizon}
-            onChange={(event) => setHorizon(event.target.value)}
-            className="rounded-lg border border-[#e5def8] bg-white px-3 py-2 text-sm font-medium text-[#5140b6] outline-none focus:border-[#6b5bd6] focus:ring-2 focus:ring-[#eee8ff]"
-          >
-            {HORIZON_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f0ebff] text-[#5b45d8]">
-            <Bell className="h-4 w-4" />
-          </span>
-          <Link
-            to="/deadlines/new"
-            className="rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4933c5]"
-          >
-            Thêm Deadline
-          </Link>
-          <span className="grid h-9 w-9 place-items-center rounded-full bg-[#5b45d8] text-xs font-bold text-white">
-            {getInitials(user)}
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="UniDeadline Tracker"
+        title="Phân tích rủi ro"
+        description="Tổng hợp rủi ro theo môn học dựa trên deadline đang hoạt động, thời gian còn lại và mức độ ưu tiên."
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Deadline đang xét: {loading ? '-' : filteredActive.length}
+            </span>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+              Môn học: {loading ? '-' : courseRisks.length}
+            </span>
+            <span
+              className="max-w-full truncate rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 xl:max-w-[320px]"
+              title={topCourse?.course?.course_name || 'Chưa có môn rủi ro'}
+            >
+              Rủi ro cao nhất: {topCourse?.course?.course_name || 'Chưa có'}
+            </span>
+          </>
+        }
+        actions={
+          <>
+            <select
+              value={horizon}
+              onChange={(event) => setHorizon(event.target.value)}
+              className="rounded-lg border border-[#e5def8] bg-white px-3 py-2 text-sm font-medium text-[#5140b6] outline-none focus:border-[#6b5bd6] focus:ring-2 focus:ring-[#eee8ff]"
+            >
+              {HORIZON_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f0ebff] text-[#5b45d8]">
+              <Bell className="h-4 w-4" />
+            </span>
+            <Link
+              to="/deadlines/new"
+              className="rounded-lg bg-[#5b45d8] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#4933c5]"
+            >
+              Thêm deadline
+            </Link>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-[#5b45d8] text-xs font-bold text-white">
+              {getInitials(user)}
+            </span>
+          </>
+        }
+      />
 
       {error && (
         <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">

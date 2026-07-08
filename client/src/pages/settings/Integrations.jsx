@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import {
   getGmailStatus,
   connectGmail,
@@ -190,38 +191,71 @@ export default function Integrations() {
         </div>
       )}
 
-      {/* Header */}
-      <header className="flex justify-between items-center px-4 py-3 w-full bg-white rounded-2xl border border-[#e9e2fb] mb-6 shadow-[0_14px_40px_rgba(91,69,170,0.03)]">
-        <h2 className="text-xl font-bold text-slate-900">Tích hợp & Đồng bộ</h2>
-      </header>
-
-      <div className="max-w-4xl mx-auto space-y-6 pb-10">
-
-        {/* Banner */}
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <span className="material-symbols-outlined text-[40px] text-red-500 bg-red-50 p-2.5 rounded-xl border border-red-100 shrink-0">
-              mail
+      <PageHeader
+        eyebrow="Tích hợp & Đồng bộ"
+        title="Đồng bộ Gmail"
+        description="Kết nối Gmail ở quyền chỉ đọc, dùng AI nhận diện email có deadline và nhập vào môn học đã chọn."
+        meta={
+          <>
+            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+              Gmail chỉ đọc
             </span>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              AI nhận diện deadline
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Chống nhập trùng
+            </span>
+          </>
+        }
+        actions={
+          <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold ${
+            connected ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
+          }`}>
+            <span className="material-symbols-outlined text-[16px]">
+              {connected ? 'check_circle' : 'radio_button_unchecked'}
+            </span>
+            {connected ? 'Đã kết nối' : 'Chưa kết nối'}
+          </span>
+        }
+      />
+
+      <div className="mx-auto max-w-5xl space-y-6 pb-10">
+        <section className="rounded-2xl border border-[#e9e2fb] bg-white p-5 shadow-[0_14px_40px_rgba(91,69,170,0.05)]">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-base text-slate-800 flex items-center gap-2">
-                Tích hợp Gmail
-                <span className="bg-gradient-to-r from-violet-500 to-[#3b309e] text-white text-[9px] px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider flex items-center gap-0.5">
-                  <span className="material-symbols-outlined text-[10px] font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    auto_awesome
-                  </span>
-                  AI hỗ trợ
-                </span>
-              </h3>
-              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Tự động đọc email Gmail và dùng AI để trích xuất deadline, tạo nhắc nhở tức thì.
+              <h2 className="text-base font-bold text-slate-900">Luồng nhập deadline từ email</h2>
+              <p className="mt-1 text-sm leading-6 text-slate-500">
+                Trình diễn theo thứ tự từ trái sang phải để người xem hiểu rõ Gmail chỉ là nguồn dữ liệu, còn deadline vẫn được gắn vào môn học trong hệ thống.
               </p>
             </div>
+            <span className="material-symbols-outlined shrink-0 rounded-xl border border-red-100 bg-red-50 p-2.5 text-[34px] text-red-500">
+              mail
+            </span>
+          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            {[
+              ['1', 'Kết nối Gmail', connected ? 'OAuth đã sẵn sàng' : 'Đăng nhập Google để cấp quyền đọc'],
+              ['2', 'Chọn môn học', selectedCourseId ? 'Deadline được gắn đúng môn' : 'Chọn môn trước khi nhập'],
+              ['3', 'Nhập deadline', importResult ? `${importResult.imported} mới, ${importResult.skipped} bỏ qua` : 'AI lọc email có hạn nộp'],
+            ].map(([step, title, detail]) => (
+              <div key={step} className="rounded-xl border border-[#eee8ff] bg-[#fbfaff] px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-[#5b45d8] text-xs font-bold text-white">
+                    {step}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900">{title}</p>
+                    <p className="mt-0.5 truncate text-xs text-slate-500" title={detail}>{detail}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* Main cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[0.9fr_1.1fr]">
 
           {/* Card trái: trạng thái kết nối */}
           <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">

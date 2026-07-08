@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Layout from '../../components/Layout'
+import PageHeader from '../../components/PageHeader'
 import ReminderAlert from '../../components/ReminderAlert'
 import { getWeeklyDashboard } from '../../services/dashboardService'
 import {
@@ -84,27 +85,38 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-        <div>
-          <p className="text-sm font-semibold text-[#6b5bd6]">UniDeadline Tracker</p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-950">Tuần này</h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {dashboard ? `${dashboard.week_start} - ${dashboard.week_end}` : 'Theo dõi workload và deadline sắp tới'}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 rounded-xl border border-[#e9e2fb] bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center">
-          <label className="text-sm font-medium text-slate-600" htmlFor="week-start">
-            Tuần bắt đầu
-          </label>
-          <input
-            id="week-start"
-            type="date"
-            value={weekStart}
-            onChange={(event) => setWeekStart(event.target.value)}
-            className="rounded-lg border border-[#e5def8] bg-[#fbfaff] px-3 py-2 text-sm outline-none focus:border-[#6b5bd6] focus:ring-2 focus:ring-[#eee8ff]"
-          />
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="UniDeadline Tracker"
+        title="Tuần này"
+        description={dashboard ? `${dashboard.week_start} - ${dashboard.week_end}` : 'Theo dõi workload và deadline sắp tới'}
+        meta={
+          <>
+            <span className="rounded-full bg-[#f0ebff] px-3 py-1 text-xs font-semibold text-[#5140b6]">
+              Deadline: {loading ? '-' : dashboard?.summary?.total ?? 0}
+            </span>
+            <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600">
+              Quá hạn: {loading ? '-' : dashboard?.summary?.overdue ?? 0}
+            </span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+              {nextDeadline ? `Tiếp theo: ${nextDeadline.title}` : 'Không có deadline cần xử lý'}
+            </span>
+          </>
+        }
+        actions={
+          <div className="flex items-center gap-2 rounded-xl border border-[#e9e2fb] bg-[#fbfaff] px-3 py-2">
+            <label className="text-sm font-medium text-slate-600" htmlFor="week-start">
+              Tuần bắt đầu
+            </label>
+            <input
+              id="week-start"
+              type="date"
+              value={weekStart}
+              onChange={(event) => setWeekStart(event.target.value)}
+              className="rounded-lg border border-[#e5def8] bg-white px-3 py-2 text-sm outline-none focus:border-[#6b5bd6] focus:ring-2 focus:ring-[#eee8ff]"
+            />
+          </div>
+        }
+      />
 
       {error && (
         <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
