@@ -12,10 +12,10 @@ export async function connectGmail() {
   window.location.href = response.data.authUrl
 }
 
-export async function importFromGmail(days, options = {}) {
+export async function importFromGmail(days, courseId, options = {}) {
   const response = await apiRequest('/gmail/import', {
     method: 'POST',
-    body: { days },
+    body: { days, course_id: courseId },
     ...options,
   })
   return response.data

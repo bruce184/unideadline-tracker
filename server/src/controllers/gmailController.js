@@ -1,7 +1,8 @@
 import { GoogleGenAI } from '@google/genai'
-import { getSupabaseAdmin } from '../config/supabase.js'
 import { sendError, sendSuccess } from '../utils/responses.js'
 import { signState, verifyState } from '../utils/gmailOAuthState.js'
+import { findOwnedCourseById } from '../models/courseModel.js'
+import { isValidUuid } from '../utils/validation.js'
 import {
   findGmailConnection,
   upsertGmailConnection,
@@ -263,19 +264,68 @@ export async function disconnectGmail(req, res) {
   return sendSuccess(res, {}, 'Đã ngắt kết nối Gmail')
 }
 
-async function getFirstCourseId(userId) {
-  const { data } = await getSupabaseAdmin()
-    .from('courses')
-    .select('id')
-    .eq('user_id', userId)
-    .limit(1)
-    .maybeSingle()
-  return data?.id || null
+async function resolveImportCourseId(courseId, userId) {
+  const normalizedCourseId = typeof courseId === 'string' ? courseId.trim() : ''
+
+  if (!normalizedCourseId) {
+    return {
+      error: {
+        status: 400,
+        code: 'COURSE_REQUIRED',
+        message: 'Select a course before importing deadlines from Gmail',
+      },
+    }
+  }
+
+  if (!isValidUuid(normalizedCourseId)) {
+    return {
+      error: {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+        message: 'course_id must be a valid UUID',
+      },
+    }
+  }
+
+  const { data, error } = await findOwnedCourseById(normalizedCourseId, userId)
+
+  if (error) {
+    if (error.code !== 'PGRST116') {
+      console.error('Find Gmail import course failed:', error.message)
+      return {
+        error: {
+          status: 500,
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'Could not validate selected course',
+        },
+      }
+    }
+
+    return {
+      error: {
+        status: 404,
+        code: 'COURSE_NOT_FOUND',
+        message: 'Selected course was not found',
+      },
+    }
+  }
+
+  if (!data) {
+    return {
+      error: {
+        status: 404,
+        code: 'COURSE_NOT_FOUND',
+        message: 'Selected course was not found',
+      },
+    }
+  }
+
+  return { courseId: normalizedCourseId }
 }
 
 /**
  * POST /api/v1/gmail/import
- * body: { days: 7 | 30 }
+ * body: { days: 7 | 30, course_id: string }
  */
 export async function importFromGmail(req, res) {
   const userId = req.user.id
@@ -303,14 +353,9 @@ export async function importFromGmail(req, res) {
     return sendError(res, 401, 'GMAIL_NOT_CONNECTED', 'Chưa kết nối Gmail')
   }
 
-  const defaultCourseId = await getFirstCourseId(userId)
-  if (!defaultCourseId) {
-    return sendError(
-      res,
-      400,
-      'COURSE_REQUIRED',
-      'Create at least one course before importing deadlines from Gmail'
-    )
+  const { courseId, error: courseError } = await resolveImportCourseId(req.body.course_id, userId)
+  if (courseError) {
+    return sendError(res, courseError.status, courseError.code, courseError.message)
   }
 
   // Timestamp để filter email (Gmail dùng Unix timestamp tính bằng giây)
@@ -385,7 +430,7 @@ export async function importFromGmail(req, res) {
         due_date: dueDate.toISOString(),
         description: parsed.description || null,
         gmail_message_id: messageId,
-        course_id: defaultCourseId,
+        course_id: courseId,
         status: 'Not Started',
         priority: 'Medium',
       })

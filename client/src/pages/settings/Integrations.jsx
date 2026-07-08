@@ -7,6 +7,7 @@ import {
   importFromGmail,
   disconnectGmail,
 } from '../../services/gmailService'
+import { listCourses } from '../../services/courseService'
 
 export default function Integrations() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -18,6 +19,9 @@ export default function Integrations() {
   const [days, setDays] = useState(7)
   const [importing, setImporting] = useState(false)
   const [importResult, setImportResult] = useState(null)
+  const [courses, setCourses] = useState([])
+  const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [loadingCourses, setLoadingCourses] = useState(true)
 
   const [connecting, setConnecting] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
@@ -86,6 +90,37 @@ export default function Integrations() {
     return () => window.clearTimeout(timeoutId)
   }, [searchParams, setSearchParams, fetchStatus, showToast])
 
+  const fetchCourses = useCallback(async () => {
+    try {
+      setLoadingCourses(true)
+      const { data } = await listCourses({ limit: 100, sort_order: 'asc' })
+      const courseList = data || []
+
+      setCourses(courseList)
+      setSelectedCourseId((currentCourseId) => {
+        if (courseList.some((course) => course.id === currentCourseId)) {
+          return currentCourseId
+        }
+
+        return courseList[0]?.id || ''
+      })
+    } catch {
+      setCourses([])
+      setSelectedCourseId('')
+      showToast('Không thể tải danh sách môn học', 'error')
+    } finally {
+      setLoadingCourses(false)
+    }
+  }, [showToast])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      fetchCourses()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [fetchCourses])
+
   const handleConnect = async () => {
     try {
       setConnecting(true)
@@ -113,10 +148,15 @@ export default function Integrations() {
   }
 
   const handleImport = async () => {
+    if (!selectedCourseId) {
+      showToast('Chọn môn học trước khi import từ Gmail', 'error')
+      return
+    }
+
     try {
       setImporting(true)
       setImportResult(null)
-      const result = await importFromGmail(days)
+      const result = await importFromGmail(days, selectedCourseId)
       setImportResult(result)
       if (result.imported > 0) {
         showToast(`Đã import ${result.imported} deadline mới từ Gmail!`)
@@ -266,10 +306,40 @@ export default function Integrations() {
                   </div>
                 </div>
 
+                {/* Chọn môn học để gắn deadline import */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide mb-2">
+                    Gắn deadline vào môn
+                  </label>
+                  <select
+                    value={selectedCourseId}
+                    onChange={(event) => setSelectedCourseId(event.target.value)}
+                    disabled={loadingCourses || importing || courses.length === 0}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-700 outline-none transition focus:border-[#3b309e] focus:ring-2 focus:ring-[#3b309e]/10 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {loadingCourses ? (
+                      <option value="">Đang tải môn học...</option>
+                    ) : courses.length > 0 ? (
+                      courses.map((course) => (
+                        <option key={course.id} value={course.id}>
+                          {course.course_code ? `${course.course_code} - ${course.course_name}` : course.course_name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="">Chưa có môn học</option>
+                    )}
+                  </select>
+                  {!loadingCourses && courses.length === 0 && (
+                    <p className="mt-2 text-[10px] text-amber-600">
+                      Tạo ít nhất một môn học trước khi import deadline từ Gmail.
+                    </p>
+                  )}
+                </div>
+
                 {/* Nút import */}
                 <button
                   onClick={handleImport}
-                  disabled={importing}
+                  disabled={importing || loadingCourses || !selectedCourseId}
                   className="w-full flex items-center justify-center gap-2 bg-[#3b309e] text-white py-2.5 rounded-xl text-xs font-bold hover:bg-[#2e2482] transition disabled:opacity-60 cursor-pointer"
                 >
                   <span className={`material-symbols-outlined text-[16px] ${importing ? 'animate-spin' : ''}`}>
